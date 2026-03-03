@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import api from '../../../lib/axios'
 import AdCard from '../../../components/ads/AdCard'
 
-export default function SearchPage() {
+function SearchResults() {
   const searchParams = useSearchParams()
   const query = searchParams.get('q') || ''
   const [ads, setAds] = useState([])
@@ -14,6 +14,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (query) fetchResults()
+    else setLoading(false)
   }, [query])
 
   const fetchResults = async () => {
@@ -60,5 +61,13 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '80px', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>Loading...</div>}>
+      <SearchResults />
+    </Suspense>
   )
 }
