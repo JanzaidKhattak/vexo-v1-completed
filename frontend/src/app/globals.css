@@ -31,6 +31,8 @@ html, body {
   color: var(--text-primary);
   background: var(--bg-secondary);
   line-height: 1.5;
+  overflow-x: hidden; /* ✅ Horizontal scroll band */
+  width: 100%;        /* ✅ Full width */
 }
 
 .page-container {
@@ -125,8 +127,11 @@ html, body {
   font-family: 'Inter', sans-serif;
   margin: 4px 0 0 0;
 }
+
 @media (max-width: 768px) {
   .page-container {
     padding: 0 16px;
   }
+  .hide-mobile { display: none !important; }
+  .show-mobile { display: flex !important; }
 }
