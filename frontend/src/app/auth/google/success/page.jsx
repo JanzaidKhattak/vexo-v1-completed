@@ -1,12 +1,12 @@
- 
 'use client'
 
+import { Suspense } from 'react'
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../../../context/AuthContext'
 import toast from 'react-hot-toast'
 
-export default function GoogleSuccessPage() {
+function GoogleSuccessInner() {
   const { login } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -45,7 +45,7 @@ export default function GoogleSuccessPage() {
       }}>
         <div style={{
           width: '48px', height: '48px', borderRadius: '50%',
-          border: '3px solid var(--brand-primary)',
+          border: '3px solid #6C3AF5',
           borderTopColor: 'transparent',
           animation: 'spin 0.8s linear infinite',
           margin: '0 auto 16px',
@@ -56,5 +56,17 @@ export default function GoogleSuccessPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function GoogleSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', color: '#64748B' }}>Loading...</p>
+      </div>
+    }>
+      <GoogleSuccessInner />
+    </Suspense>
   )
 }
