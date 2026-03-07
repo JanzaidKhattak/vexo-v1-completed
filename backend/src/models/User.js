@@ -24,6 +24,8 @@ const userSchema = new mongoose.Schema({
 role: { type: String, enum: ['user', 'admin', 'super-admin'], default: 'user' },
 isActive: { type: Boolean, default: true },
 blockReason: { type: String, default: '' },
+isDeleted: { type: Boolean, default: false },
+deletedAt: { type: Date, default: null },
 
   // Legacy
   location: { type: String, default: 'Attock' },

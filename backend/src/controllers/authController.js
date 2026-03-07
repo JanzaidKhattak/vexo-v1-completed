@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer')
 const axios = require('axios')
 const User = require('../models/User')
+const BlacklistedEmail = require('../models/BlacklistedEmail')
 
 // Email transporter
 const transporter = nodemailer.createTransport({
@@ -64,6 +65,16 @@ const register = async (req, res) => {
     if (!captchaValid) {
       return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed' })
     }
+
+    // Blacklist check
+const blacklisted = await BlacklistedEmail.findOne({ email })
+if (blacklisted) {
+  return res.status(403).json({ 
+    success: false, 
+    message: `This email has been permanently suspended from VEXO. Reason: ${blacklisted.reason}`,
+    suspended: true
+  })
+}
 
     // Email already exists?
     const existing = await User.findOne({ email })
@@ -133,6 +144,16 @@ const login = async (req, res) => {
         return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed' })
       }
     }
+
+    // Blacklist check
+const blacklisted = await BlacklistedEmail.findOne({ email })
+if (blacklisted) {
+  return res.status(403).json({ 
+    success: false, 
+    message: `Your account has been permanently suspended. Reason: ${blacklisted.reason}`,
+    suspended: true
+  })
+}
 
     const user = await User.findOne({ email })
     if (!user) {

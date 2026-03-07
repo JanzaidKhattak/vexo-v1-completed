@@ -4,6 +4,7 @@ const Report = require('../models/Report')
 const { createNotification } = require('./notificationController')
 const ActivityLog = require('../models/ActivityLog')
 const bcrypt = require('bcryptjs')
+const BlacklistedEmail = require('../models/BlacklistedEmail')
 
 const getDashboard = async (req, res) => {
   try {
@@ -100,17 +101,37 @@ const deleteUser = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Cannot delete admin users' })
     }
 
-    await Ad.updateMany({ seller: user._id }, { isDeletedByUser: true })
-    await User.findByIdAndDelete(req.params.id)
+    // Soft delete — data preserve karo
+    await User.findByIdAndUpdate(req.params.id, {
+      isDeleted: true,
+      deletedAt: new Date(),
+      email: `deleted_${user._id}@deleted.vexo`,
+      firstName: 'Deleted',
+      lastName: 'User',
+      phone: '',
+      avatar: '',
+    })
 
+    // Ads bhi hide karo
+    await Ad.updateMany({ seller: user._id }, { isDeletedByUser: true })
+
+    // Email blacklist mein add karo
+    await BlacklistedEmail.create({
+      email: user.email,
+      reason: reason || 'Policy violation',
+      deletedBy: req.user._id,
+    })
+
+    // Activity log
     await ActivityLog.create({
       performedBy: req.user._id,
       action: 'delete_user',
-      details: `Deleted user: ${user.email} — Reason: ${reason || 'No reason provided'}`
+      details: `Permanently suspended: ${user.email} — Reason: ${reason || 'Policy violation'}`
     })
 
-    return res.status(200).json({ success: true, message: 'User deleted successfully' })
+    return res.status(200).json({ success: true, message: 'User permanently suspended' })
   } catch (error) {
+    console.error(error)
     return res.status(500).json({ success: false, message: 'Server error' })
   }
 }

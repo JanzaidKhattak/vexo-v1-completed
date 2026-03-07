@@ -52,7 +52,9 @@ export default function LoginPage() {
       toast.success("Welcome back!");
       router.push("/");
     } catch (err) {
-      if (err.response?.data?.blocked) {
+      if (err.response?.data?.suspended) {
+        setBlockedMessage(err.response.data.message);
+      } else if (err.response?.data?.blocked) {
         setBlockedMessage(err.response.data.message);
       } else {
         toast.error(err.response?.data?.message || "Login failed");
@@ -262,7 +264,7 @@ export default function LoginPage() {
                   marginBottom: "4px",
                 }}
               >
-                Account Blocked
+                🚫 Account Suspended
               </p>
               <p
                 style={{
