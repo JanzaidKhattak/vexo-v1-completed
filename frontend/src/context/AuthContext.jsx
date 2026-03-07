@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect } from 'react'
+import api from '../lib/axios'
 
 const AuthContext = createContext(null)
 
@@ -11,13 +12,31 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('vexo_user')
-      if (stored) setUser(JSON.parse(stored))
+      if (stored) {
+        setUser(JSON.parse(stored))
+        // Backend se fresh user data lo
+        refreshUser()
+      }
     } catch (e) {
       localStorage.removeItem('vexo_user')
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const refreshUser = async () => {
+    try {
+      const token = localStorage.getItem('vexo_token')
+      if (!token) return
+      const res = await api.get('/auth/me')
+      const freshUser = res.data.user
+      setUser(freshUser)
+      localStorage.setItem('vexo_user', JSON.stringify(freshUser))
+    } catch (err) {
+      // Token expired ya invalid
+      logout()
+    }
+  }
 
   const login = (userData, token) => {
     setUser(userData)
@@ -38,7 +57,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,233 +1,547 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
-import PhoneInput from '../../../components/auth/PhoneInput'
-import OtpInput from '../../../components/auth/OtpInput'
-import { useAuth } from '../../../context/AuthContext'
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from '../../../lib/firebase'
-import api from '../../../lib/axios'
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import ReCAPTCHA from "react-google-recaptcha";
+import toast from "react-hot-toast";
+import { useAuth } from "../../../context/AuthContext";
+import { useSiteSettings } from "../../../context/SiteSettingsContext";
+import api from "../../../lib/axios";
 
 export default function LoginPage() {
-  const [step, setStep] = useState('phone')
-  const [phone, setPhone] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [confirmationResult, setConfirmationResult] = useState(null)
-  const recaptchaRef = useRef(null)
-  const { login } = useAuth()
-  const router = useRouter()
+  const { login, user } = useAuth();
+  const { settings } = useSiteSettings();
+  const router = useRouter();
+  const recaptchaRef = useRef(null);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear()
-        window.recaptchaVerifier = null
-      }
-    }
-  }, [])
+    setMounted(true);
+    if (user) router.push("/");
+  }, [user]);
 
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-        callback: () => {},
-      })
-    }
-    return window.recaptchaVerifier
-  }
+  const [blockedMessage, setBlockedMessage] = useState("");
 
-  const handlePhoneSubmit = async (formattedPhone) => {
-    setLoading(true)
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Please fill all fields");
+      return;
+    }
+
+    const recaptchaToken = recaptchaRef.current?.getValue();
+    if (!recaptchaToken) {
+      toast.error("Please complete the reCAPTCHA");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const appVerifier = setupRecaptcha()
-      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier)
-      setConfirmationResult(result)
-      setPhone(formattedPhone)
-      setStep('otp')
-      toast.success('OTP sent successfully!')
+      const res = await api.post("/auth/login", {
+        email,
+        password,
+        recaptchaToken,
+      });
+      login(res.data.user, res.data.token);
+      toast.success("Welcome back!");
+      router.push("/");
     } catch (err) {
-      console.error(err)
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear()
-        window.recaptchaVerifier = null
+      if (err.response?.data?.blocked) {
+        setBlockedMessage(err.response.data.message);
+      } else {
+        toast.error(err.response?.data?.message || "Login failed");
       }
-      toast.error('Failed to send OTP. Try again.')
+      recaptchaRef.current?.reset();
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleOtpSubmit = async (otp) => {
-    if (otp.length < 6) {
-      toast.error('Please enter complete 6-digit OTP')
-      return
-    }
-    setLoading(true)
-    try {
-      const result = await confirmationResult.confirm(otp)
-      const idToken = await result.user.getIdToken()
+  const handleGoogle = () => {
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+  };
 
-      const res = await api.post('/auth/verify-otp', {
-        idToken,
-        phone,
-      })
-
-      login(res.data.user, res.data.token)
-      toast.success('Login successful! Welcome to VEXO 🎉')
-      router.push('/')
-    } catch (err) {
-      console.error(err)
-      toast.error('Invalid OTP. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleResend = async () => {
-    try {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear()
-        window.recaptchaVerifier = null
-      }
-      const appVerifier = setupRecaptcha()
-      const result = await signInWithPhoneNumber(auth, phone, appVerifier)
-      setConfirmationResult(result)
-      toast.success('OTP resent!')
-    } catch {
-      toast.error('Failed to resend OTP')
-    }
-  }
+  if (!mounted) return null;
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, var(--brand-secondary) 0%, #16213E 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <div style={{
-        position: 'absolute', top: '-100px', right: '-100px',
-        width: '400px', height: '400px',
-        background: 'rgba(255,75,38,0.06)', borderRadius: '50%',
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-80px', left: '-80px',
-        width: '300px', height: '300px',
-        background: 'rgba(255,184,0,0.05)', borderRadius: '50%',
-        pointerEvents: 'none',
-      }} />
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Animated background blobs */}
+      <div
+        style={{
+          position: "absolute",
+          top: "-120px",
+          right: "-120px",
+          width: "500px",
+          height: "500px",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(108,58,245,0.15) 0%, transparent 70%)",
+          animation: "pulse 4s ease-in-out infinite",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: "-100px",
+          left: "-100px",
+          width: "400px",
+          height: "400px",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(230,57,70,0.1) 0%, transparent 70%)",
+          animation: "pulse 6s ease-in-out infinite",
+        }}
+      />
 
-      <div id="recaptcha-container" ref={recaptchaRef} />
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); opacity: 0.7; }
+          50% { transform: scale(1.05); opacity: 1; }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .auth-input:focus {
+          border-color: var(--brand-primary) !important;
+          box-shadow: 0 0 0 3px rgba(108,58,245,0.1) !important;
+        }
+        .auth-input {
+          transition: all 0.2s ease !important;
+        }
+        .google-btn:hover {
+          background: #f8f8f8 !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        }
+        .submit-btn:hover {
+          opacity: 0.92 !important;
+          transform: translateY(-1px) !important;
+        }
+        .submit-btn {
+          transition: all 0.2s ease !important;
+        }
+      `}</style>
 
-      <div style={{
-        background: 'white', borderRadius: '24px', padding: '40px',
-        width: '100%', maxWidth: '420px',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.25)',
-        position: 'relative', zIndex: 1,
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <div style={{
-              width: '42px', height: '42px',
-              background: 'var(--brand-primary)', borderRadius: '12px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: 'Syne, sans-serif', fontWeight: '800', color: 'white', fontSize: '20px',
-            }}>V</div>
-            <span style={{
-              fontFamily: 'Syne, sans-serif', fontWeight: '800',
-              fontSize: '26px', color: 'var(--brand-secondary)',
-            }}>VEXO</span>
-          </div>
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
-            Verified Exchange Online • Attock
-          </p>
-        </div>
-
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          marginBottom: '28px', justifyContent: 'center',
-        }}>
-          {['phone', 'otp'].map((s, i) => (
-            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                background: step === s || (s === 'phone' && step === 'otp') ? 'var(--brand-primary)' : 'var(--bg-secondary)',
-                color: step === s || (s === 'phone' && step === 'otp') ? 'white' : 'var(--text-muted)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '12px', fontWeight: '700', fontFamily: 'DM Sans, sans-serif',
-              }}>
-                {s === 'phone' && step === 'otp' ? '✓' : i + 1}
+      <div
+        style={{
+          background: "white",
+          borderRadius: "24px",
+          padding: "44px 40px",
+          width: "100%",
+          maxWidth: "440px",
+          boxShadow: "0 32px 100px rgba(0,0,0,0.4)",
+          position: "relative",
+          zIndex: 1,
+          animation: "fadeInUp 0.5s ease forwards",
+        }}
+      >
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <Link
+            href="/"
+            style={{
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "10px",
+              marginBottom: "6px",
+            }}
+          >
+            {settings?.logoUrl ? (
+              <img
+                src={settings.logoUrl}
+                alt="logo"
+                style={{ height: "36px", width: "auto" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  background: "var(--brand-primary)",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontWeight: "800",
+                  fontSize: "18px",
+                }}
+              >
+                {settings?.siteName?.charAt(0) || "V"}
               </div>
-              <span style={{
-                fontSize: '12px',
-                color: step === s ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontFamily: 'DM Sans, sans-serif',
-                fontWeight: step === s ? '600' : '400',
-              }}>
-                {s === 'phone' ? 'Phone Number' : 'Verify OTP'}
-              </span>
-              {i === 0 && (
-                <div style={{
-                  width: '32px', height: '2px',
-                  background: step === 'otp' ? 'var(--brand-primary)' : 'var(--border-default)',
-                  borderRadius: '2px',
-                }} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{
-            fontFamily: 'Syne, sans-serif', fontSize: '22px',
-            fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px',
-          }}>
-            {step === 'phone' ? 'Welcome Back 👋' : 'Enter OTP 🔐'}
-          </h2>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' }}>
-            {step === 'phone'
-              ? 'Apna Pakistani mobile number enter karein'
-              : 'Apke number pe bheja gaya OTP enter karein'}
-          </p>
-        </div>
-
-        {step === 'phone' ? (
-          <PhoneInput onSubmit={handlePhoneSubmit} loading={loading} />
-        ) : (
-          <>
-            <OtpInput phone={phone} onSubmit={handleOtpSubmit} onResend={handleResend} loading={loading} />
-            <button
-              onClick={() => setStep('phone')}
+            )}
+            <span
               style={{
-                background: 'none', border: 'none', color: 'var(--text-muted)',
-                fontSize: '13px', fontFamily: 'DM Sans, sans-serif',
-                cursor: 'pointer', marginTop: '12px', display: 'block',
-                width: '100%', textAlign: 'center',
+                fontSize: "24px",
+                fontWeight: "800",
+                color: "#111827",
+                letterSpacing: "-0.03em",
+                fontFamily: "Inter, sans-serif",
               }}
             >
-              ← Change number
-            </button>
-          </>
+              {settings?.siteName || "VEXO"}
+            </span>
+          </Link>
+          <p
+            style={{
+              fontSize: "13px",
+              color: "#9CA3AF",
+              fontFamily: "Inter, sans-serif",
+              marginTop: "4px",
+            }}
+          >
+            Attock's trusted marketplace
+          </p>
+        </div>
+
+        {/* Heading */}
+        <div style={{ marginBottom: "28px" }}>
+          <h1
+            style={{
+              fontSize: "26px",
+              fontWeight: "800",
+              color: "#111827",
+              fontFamily: "Inter, sans-serif",
+              letterSpacing: "-0.02em",
+              marginBottom: "6px",
+            }}
+          >
+            Welcome back
+          </h1>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#6B7280",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            Sign in to your account to continue
+          </p>
+        </div>
+
+        {/* Blocked Message */}
+        {blockedMessage && (
+          <div
+            style={{
+              background: "#FEF2F2",
+              border: "1px solid #FECACA",
+              borderRadius: "12px",
+              padding: "16px",
+              marginBottom: "20px",
+              display: "flex",
+              gap: "12px",
+              alignItems: "flex-start",
+            }}
+          >
+            <span style={{ fontSize: "20px", flexShrink: 0 }}>🚫</span>
+            <div>
+              <p
+                style={{
+                  fontWeight: "700",
+                  color: "#991B1B",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: "14px",
+                  marginBottom: "4px",
+                }}
+              >
+                Account Blocked
+              </p>
+              <p
+                style={{
+                  color: "#B91C1C",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: "13px",
+                }}
+              >
+                {blockedMessage}
+              </p>
+              <p
+                style={{
+                  color: "#EF4444",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: "12px",
+                  marginTop: "6px",
+                }}
+              >
+                Contact support if you think this is a mistake.
+              </p>
+            </div>
+          </div>
         )}
 
-        <p style={{
-          fontSize: '11px', color: 'var(--text-muted)',
-          textAlign: 'center', marginTop: '20px',
-          fontFamily: 'DM Sans, sans-serif', lineHeight: '1.6',
-        }}>
-          Login karke aap VEXO ki{' '}
-          <a href="/terms" style={{ color: 'var(--brand-primary)' }}>Terms</a>
-          {' '}aur{' '}
-          <a href="/privacy-policy" style={{ color: 'var(--brand-primary)' }}>Privacy Policy</a>
-          {' '}se agree karte hain
+        {/* Google Button */}
+        <button
+          onClick={handleGoogle}
+          className="google-btn"
+          style={{
+            width: "100%",
+            padding: "12px",
+            border: "1.5px solid #E5E7EB",
+            borderRadius: "10px",
+            background: "white",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+            fontSize: "14px",
+            fontWeight: "600",
+            fontFamily: "Inter, sans-serif",
+            color: "#374151",
+            marginBottom: "20px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            />
+          </svg>
+          Continue with Google
+        </button>
+
+        {/* Divider */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginBottom: "20px",
+          }}
+        >
+          <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#9CA3AF",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: "500",
+            }}
+          >
+            or sign in with email
+          </span>
+          <div style={{ flex: 1, height: "1px", background: "#E5E7EB" }} />
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom: "16px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "600",
+                color: "#374151",
+                fontFamily: "Inter, sans-serif",
+                marginBottom: "6px",
+              }}
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="auth-input"
+              style={{
+                width: "100%",
+                padding: "11px 14px",
+                border: "1.5px solid #E5E7EB",
+                borderRadius: "10px",
+                fontSize: "14px",
+                fontFamily: "Inter, sans-serif",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: "600",
+                color: "#374151",
+                fontFamily: "Inter, sans-serif",
+                marginBottom: "6px",
+              }}
+            >
+              Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="auth-input"
+                style={{
+                  width: "100%",
+                  padding: "11px 44px 11px 14px",
+                  border: "1.5px solid #E5E7EB",
+                  borderRadius: "10px",
+                  fontSize: "14px",
+                  fontFamily: "Inter, sans-serif",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#9CA3AF",
+                  fontSize: "16px",
+                  padding: "0",
+                }}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
+          </div>
+
+          <div
+            style={{
+              textAlign: "right",
+              marginTop: "-12px",
+              marginBottom: "20px",
+            }}
+          >
+            <Link
+              href="/forgot-password"
+              style={{
+                fontSize: "13px",
+                color: "#6C3AF5",
+                fontWeight: "600",
+                fontFamily: "Inter, sans-serif",
+                textDecoration: "none",
+              }}
+            >
+              Forgot Password?
+            </Link>
+          </div>
+
+          {/* reCAPTCHA */}
+          <div
+            style={{
+              marginBottom: "20px",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey="6LeJpIIsAAAAAAWE1elHvJD17sfw4KpCVYLAyUv2"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="submit-btn"
+            style={{
+              width: "100%",
+              padding: "13px",
+              background: "var(--brand-primary)",
+              color: "white",
+              border: "none",
+              borderRadius: "10px",
+              fontSize: "15px",
+              fontWeight: "700",
+              fontFamily: "Inter, sans-serif",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: "20px",
+            fontSize: "14px",
+            fontFamily: "Inter, sans-serif",
+            color: "#6B7280",
+          }}
+        >
+          Don't have an account?{" "}
+          <Link
+            href="/signup"
+            style={{
+              color: "var(--brand-primary)",
+              fontWeight: "700",
+              textDecoration: "none",
+            }}
+          >
+            Create one
+          </Link>
+        </p>
+
+        <p
+          style={{
+            fontSize: "11px",
+            color: "#9CA3AF",
+            textAlign: "center",
+            marginTop: "16px",
+            fontFamily: "Inter, sans-serif",
+            lineHeight: "1.6",
+          }}
+        >
+          By signing in, you agree to our{" "}
+          <Link href="/terms" style={{ color: "var(--brand-primary)" }}>
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="/privacy-policy"
+            style={{ color: "var(--brand-primary)" }}
+          >
+            Privacy Policy
+          </Link>
         </p>
       </div>
     </div>
-  )
+  );
 }

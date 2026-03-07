@@ -1,9 +1,9 @@
 require('dotenv').config()
-require('./config/firebase')
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const passport = require('./config/passport')
 
 const authRoutes = require('./routes/authRoutes')
 const adRoutes = require('./routes/adRoutes')
@@ -22,6 +22,7 @@ app.use(cors({
 app.use(morgan('dev'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use(passport.initialize())
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Vexo API is running' })
@@ -34,6 +35,7 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/pages', require('./routes/pages'))
+app.use('/api/settings', require('./routes/settingsRoutes'))
 
 app.use((err, req, res, next) => {
   console.error(err.stack)

@@ -1,11 +1,12 @@
 const Ad = require('../models/Ad')
 const User = require('../models/User')
 const { cloudinary } = require('../config/cloudinary')
+const { createNotification } = require('./notificationController')
 
 const getAds = async (req, res) => {
   try {
     const { category, search, page = 1, limit = 20, sort = 'newest' } = req.query
-    const query = { status: 'active' }
+    const query = { status: 'active', isDeletedByUser: false }
 
     if (category) query.category = category
     if (search) query.$text = { $search: search }
@@ -23,13 +24,8 @@ const getAds = async (req, res) => {
       .limit(Number(limit))
 
     return res.status(200).json({
-      success: true,
-      ads,
-      pagination: {
-        total,
-        page: Number(page),
-        pages: Math.ceil(total / limit)
-      }
+      success: true, ads,
+      pagination: { total, page: Number(page), pages: Math.ceil(total / limit) }
     })
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server error' })
@@ -41,9 +37,7 @@ const getAdById = async (req, res) => {
     const ad = await Ad.findById(req.params.id)
       .populate('seller', 'name phone avatar location createdAt')
 
-    if (!ad) {
-      return res.status(404).json({ success: false, message: 'Ad not found' })
-    }
+    if (!ad) return res.status(404).json({ success: false, message: 'Ad not found' })
 
     await Ad.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } })
 
@@ -56,12 +50,10 @@ const getAdById = async (req, res) => {
 const createAd = async (req, res) => {
   try {
     const { title, description, price, category, area, details } = req.body
-
     const images = req.files ? req.files.map(f => f.path) : []
 
     const ad = await Ad.create({
-      title,
-      description,
+      title, description,
       price: Number(price),
       category,
       area: area || '',
@@ -84,9 +76,7 @@ const updateAd = async (req, res) => {
   try {
     const ad = await Ad.findById(req.params.id)
 
-    if (!ad) {
-      return res.status(404).json({ success: false, message: 'Ad not found' })
-    }
+    if (!ad) return res.status(404).json({ success: false, message: 'Ad not found' })
 
     if (ad.seller.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Not authorized' })
@@ -95,6 +85,13 @@ const updateAd = async (req, res) => {
     const { title, description, price, area, details } = req.body
     const newImages = req.files ? req.files.map(f => f.path) : []
 
+    // Changes track karo diff ke liye
+    const changes = {}
+    if (title && title !== ad.title) changes.title = { old: ad.title, new: title }
+    if (description && description !== ad.description) changes.description = { old: ad.description, new: description }
+    if (price && Number(price) !== ad.price) changes.price = { old: ad.price, new: Number(price) }
+    if (area && area !== ad.area) changes.area = { old: ad.area, new: area }
+
     ad.title = title || ad.title
     ad.description = description || ad.description
     ad.price = price ? Number(price) : ad.price
@@ -102,8 +99,22 @@ const updateAd = async (req, res) => {
     ad.details = details ? JSON.parse(details) : ad.details
     if (newImages.length > 0) ad.images = newImages
     ad.status = 'pending'
+    ad.hasUpdate = true
+    ad.updateHistory.push({ updatedAt: new Date(), changes })
 
     await ad.save()
+
+    // Admin ko notification
+    const admins = await User.find({ role: 'admin' })
+    for (const admin of admins) {
+      await createNotification(
+        admin._id,
+        '✏️ Ad Updated by User',
+        `User has updated the ad "${ad.title}". Review is pending.`,
+        'general',
+        `/admin/ads`
+      )
+    }
 
     return res.status(200).json({ success: true, ad })
   } catch (error) {
@@ -115,13 +126,13 @@ const deleteAd = async (req, res) => {
   try {
     const ad = await Ad.findById(req.params.id)
 
-    if (!ad) {
-      return res.status(404).json({ success: false, message: 'Ad not found' })
-    }
+    if (!ad) return res.status(404).json({ success: false, message: 'Ad not found' })
 
     if (ad.seller.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' })
     }
+
+    const adTitle = ad.title
 
     // Cloudinary se images delete karo
     for (const imageUrl of ad.images) {
@@ -132,6 +143,20 @@ const deleteAd = async (req, res) => {
     await Ad.findByIdAndDelete(req.params.id)
     await User.findByIdAndUpdate(ad.seller, { $inc: { totalAds: -1 } })
 
+    // Admin ko notification (agar user ne delete kiya)
+    if (req.user.role !== 'admin') {
+      const admins = await User.find({ role: 'admin' })
+      for (const admin of admins) {
+        await createNotification(
+          admin._id,
+          '🗑️ Ad Deleted by User',
+          `User has deleted their ad "${adTitle}".`,
+          'general',
+          `/admin/ads`
+        )
+      }
+    }
+
     return res.status(200).json({ success: true, message: 'Ad deleted' })
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server error' })
@@ -140,7 +165,7 @@ const deleteAd = async (req, res) => {
 
 const getTrendingAds = async (req, res) => {
   try {
-    const ads = await Ad.find({ status: 'active' })
+    const ads = await Ad.find({ status: 'active', isDeletedByUser: false })
       .populate('seller', 'name phone avatar')
       .sort({ views: -1 })
       .limit(10)
@@ -153,7 +178,7 @@ const getTrendingAds = async (req, res) => {
 
 const getRecentAds = async (req, res) => {
   try {
-    const ads = await Ad.find({ status: 'active' })
+    const ads = await Ad.find({ status: 'active', isDeletedByUser: false })
       .populate('seller', 'name phone avatar')
       .sort({ createdAt: -1 })
       .limit(20)
@@ -168,16 +193,27 @@ const markAsSold = async (req, res) => {
   try {
     const ad = await Ad.findById(req.params.id)
 
-    if (!ad) {
-      return res.status(404).json({ success: false, message: 'Ad not found' })
-    }
+    if (!ad) return res.status(404).json({ success: false, message: 'Ad not found' })
 
     if (ad.seller.toString() !== req.user._id.toString()) {
       return res.status(403).json({ success: false, message: 'Not authorized' })
     }
 
     ad.status = 'sold'
+    ad.soldAt = new Date()
     await ad.save()
+
+    // Admin ko notification
+    const admins = await User.find({ role: 'admin' })
+    for (const admin of admins) {
+      await createNotification(
+        admin._id,
+        '✅ Ad Marked as Sold',
+        `User has marked the ad "${ad.title}" as sold.`,
+        'general',
+        `/admin/ads`
+      )
+    }
 
     return res.status(200).json({ success: true, message: 'Ad marked as sold' })
   } catch (error) {
