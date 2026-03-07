@@ -13,6 +13,7 @@ import FurnitureForm from '../../../components/forms/FurnitureForm'
 import FashionForm from '../../../components/forms/FashionForm'
 import OthersForm from '../../../components/forms/OthersForm'
 import { CATEGORIES } from '../../../constants/categories'
+import { Suspense } from 'react'
 
 const FORM_MAP = {
   mobiles: MobileForm,
@@ -156,7 +157,7 @@ function PhoneModal({ onSave, onClose }) {
   )
 }
 
-export default function PostAdPage() {
+function PostAdPageInner() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -393,5 +394,12 @@ export default function PostAdPage() {
         </button>
       </div>
     </div>
+  )
+}
+export default function PostAdPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '32px', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>Loading...</div>}>
+      <PostAdPageInner />
+    </Suspense>
   )
 }
