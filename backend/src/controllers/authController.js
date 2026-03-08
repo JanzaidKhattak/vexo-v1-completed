@@ -1,18 +1,12 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const nodemailer = require('nodemailer')
+const { Resend } = require('resend')
 const axios = require('axios')
 const User = require('../models/User')
 const BlacklistedEmail = require('../models/BlacklistedEmail')
 
 // Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  }
-})
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 // JWT generate
 const generateToken = (userId) => {
@@ -100,8 +94,8 @@ if (blacklisted) {
     })
 
     // Send verification email
-    await transporter.sendMail({
-      from: `"Vexo" <${process.env.GMAIL_USER}>`,
+    await resend.emails.send({
+      from: 'Vexo <onboarding@resend.dev>',
       to: email,
       subject: 'Verify your Vexo account',
       html: `
@@ -214,8 +208,8 @@ const sendVerifyOtp = async (req, res) => {
     user.emailVerifyOtpExpiry = otpExpiry
     await user.save()
 
-    await transporter.sendMail({
-      from: `"Vexo" <${process.env.GMAIL_USER}>`,
+    await resend.emails.send({
+      from: 'Vexo <onboarding@resend.dev>',
       to: user.email,
       subject: 'Verify your Vexo email',
       html: `
@@ -300,8 +294,8 @@ const forgotPassword = async (req, res) => {
     user.resetPasswordOtpExpiry = otpExpiry
     await user.save()
 
-    await transporter.sendMail({
-      from: `"Vexo" <${process.env.GMAIL_USER}>`,
+    await resend.emails.send({
+      from: 'Vexo <onboarding@resend.dev>',
       to: email,
       subject: 'Reset your Vexo password',
       html: `
