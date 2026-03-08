@@ -18,7 +18,7 @@ const adSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['cars', 'motorcycles', 'mobiles', 'electronics', 'furniture', 'fashion', 'others']
+    enum: ['cars', 'motorcycles', 'mobiles', 'electronics', 'furniture', 'furniture-home', 'fashion', 'fashion-beauty', 'others']
   },
   images: [{
     type: String
