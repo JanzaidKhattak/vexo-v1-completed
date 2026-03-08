@@ -9,6 +9,8 @@ import RecentAds from '../../components/home/RecentAds'
 import AdBannerSlot from '../../components/home/AdBannerSlot'
 import api from '../../lib/axios'
 import Link from 'next/link'
+import { useSiteSettings } from '../../context/SiteSettingsContext'
+import { CATEGORIES } from '../../constants/categories'
 
 function SectionHeader({ title, subtitle, href }) {
   return (
@@ -19,12 +21,12 @@ function SectionHeader({ title, subtitle, href }) {
       <div>
         <h2 style={{
           fontSize: '20px', fontWeight: '800', color: '#0f172a',
-          fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em',
+          fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em',
           marginBottom: '3px',
         }}>{title}</h2>
         <p style={{
           fontSize: '13px', color: '#94A3B8',
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: "'DM Sans', sans-serif",
         }}>{subtitle}</p>
       </div>
       {href && (
@@ -44,14 +46,23 @@ function SectionHeader({ title, subtitle, href }) {
   )
 }
 
-export default function HomePage() {
-  const [trendingAds, setTrendingAds] = useState([])
-  const [recentAds, setRecentAds] = useState([])
-  const [loading, setLoading] = useState(true)
+// Fallback static sections if settings not loaded yet
+const STATIC_SECTIONS = [
+  { category: 'mobiles',       title: 'Latest Mobiles',    subtitle: 'Fresh mobile listings in Attock',  href: '/category/mobiles'       },
+  { category: 'cars',          title: 'Cars for Sale',     subtitle: 'Find your next car in Attock',     href: '/category/cars'          },
+  { category: 'motorcycles',   title: 'Motorcycles',       subtitle: 'Bikes available in Attock',        href: '/category/motorcycles'   },
+  { category: 'electronics',   title: 'Electronics',       subtitle: 'TVs, ACs & more',                  href: '/category/electronics'   },
+  { category: 'furniture-home',title: 'Furniture & Home',  subtitle: 'Home essentials',                  href: '/category/furniture-home'},
+  { category: 'fashion-beauty',title: 'Fashion & Beauty',  subtitle: 'Clothing, accessories & more',     href: '/category/fashion-beauty'},
+]
 
-  useEffect(() => {
-    fetchAds()
-  }, [])
+export default function HomePage() {
+  const { settings } = useSiteSettings()
+  const [trendingAds, setTrendingAds] = useState([])
+  const [recentAds,   setRecentAds]   = useState([])
+  const [loading,     setLoading]     = useState(true)
+
+  useEffect(() => { fetchAds() }, [])
 
   const fetchAds = async () => {
     try {
@@ -68,16 +79,23 @@ export default function HomePage() {
     }
   }
 
-  const getAdsByCategory = (category) => recentAds.filter(ad => ad.category === category)
+  const getAdsByCategory = (categoryId) =>
+    recentAds.filter(ad => ad.category === categoryId).slice(0, 4)
 
-  const sections = [
-    { category: 'mobiles', title: 'Latest Mobiles', subtitle: 'Fresh mobile listings in Attock', href: '/category/mobiles' },
-    { category: 'cars', title: 'Cars for Sale', subtitle: 'Find your next car in Attock', href: '/category/cars' },
-    { category: 'motorcycles', title: 'Motorcycles', subtitle: 'Bikes available in Attock', href: '/category/motorcycles' },
-    { category: 'electronics', title: 'Electronics', subtitle: 'TVs, ACs & more', href: '/category/electronics' },
-    { category: 'furniture-home', title: 'Furniture & Home', subtitle: 'Home essentials', href: '/category/furniture-home' },
-    { category: 'fashion-beauty', title: 'Fashion & Beauty', subtitle: 'Clothing, accessories & more', href: '/category/fashion-beauty' },
-  ]
+  // Build sections from settings categories where showOnHome === true
+  // Falls back to static list if settings not available
+  const activeSections = (() => {
+    const cats = settings?.categories?.filter(c => c.isActive && c.showOnHome)
+    if (cats && cats.length > 0) {
+      return cats.map(cat => ({
+        category: cat.id,
+        title: cat.name,
+        subtitle: `Latest ${cat.name} listings in Attock`,
+        href: `/category/${cat.id}`,
+      }))
+    }
+    return STATIC_SECTIONS
+  })()
 
   return (
     <div>
@@ -108,22 +126,26 @@ export default function HomePage() {
           <AdBannerSlot type="banner" />
         </div>
 
-        {/* Category Sections */}
-        {sections.map((s, i) => (
-          <section key={s.category} style={{ marginTop: '48px' }}>
-            <SectionHeader
-              title={s.title}
-              subtitle={s.subtitle}
-              href={s.href}
-            />
-            <RecentAds ads={getAdsByCategory(s.category)} loading={loading} />
-            {i === 2 && (
-              <div style={{ marginTop: '40px' }}>
-                <AdBannerSlot type="leaderboard" />
-              </div>
-            )}
-          </section>
-        ))}
+        {/* Dynamic Category Sections */}
+        {activeSections.map((s, i) => {
+          const ads = getAdsByCategory(s.category)
+          // Skip section if no ads at all (optional: remove this check to always show)
+          return (
+            <section key={s.category} style={{ marginTop: '48px' }}>
+              <SectionHeader
+                title={s.title}
+                subtitle={s.subtitle}
+                href={s.href}
+              />
+              <RecentAds ads={ads} loading={loading} />
+              {i === 2 && (
+                <div style={{ marginTop: '40px' }}>
+                  <AdBannerSlot type="leaderboard" />
+                </div>
+              )}
+            </section>
+          )
+        })}
 
       </div>
     </div>
