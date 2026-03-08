@@ -7,9 +7,11 @@ import { CATEGORIES } from '../../constants/categories'
 
 export default function CategoryGrid() {
   const { settings } = useSiteSettings()
-  const scrollRef = useRef(null)
+  const scrollRef       = useRef(null)
+  const containerRef    = useRef(null)
   const [canLeft,  setCanLeft]  = useState(false)
   const [canRight, setCanRight] = useState(false)
+  const [cardW,    setCardW]    = useState(100)
 
   const categories = (() => {
     const cats = settings?.categories?.filter(c => c.isActive)
@@ -17,8 +19,16 @@ export default function CategoryGrid() {
     return CATEGORIES
   })()
 
-  const CARD_W = 96
-  const GAP    = 18
+  const GAP = 24
+
+  // Calculate card width so exactly 6 fit in container
+  const calcCardW = () => {
+    if (!containerRef.current) return
+    const w = containerRef.current.clientWidth
+    // 6 cards + 5 gaps fit exactly
+    const cw = Math.floor((w - GAP * 5) / 6)
+    setCardW(Math.max(cw, 80))
+  }
 
   const checkScroll = () => {
     const el = scrollRef.current
@@ -28,88 +38,49 @@ export default function CategoryGrid() {
   }
 
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
+    calcCardW()
     checkScroll()
-    el.addEventListener('scroll', checkScroll, { passive: true })
-    const ro = new ResizeObserver(checkScroll)
-    ro.observe(el)
-    return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect() }
+    const el = scrollRef.current
+    if (el) el.addEventListener('scroll', checkScroll, { passive: true })
+    const ro = new ResizeObserver(() => { calcCardW(); checkScroll() })
+    if (containerRef.current) ro.observe(containerRef.current)
+    return () => { el?.removeEventListener('scroll', checkScroll); ro.disconnect() }
   }, [categories])
 
   const scroll = (dir) => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollBy({ left: dir === 'right' ? (CARD_W + GAP) * 3 : -(CARD_W + GAP) * 3, behavior: 'smooth' })
+    // scroll by exactly 6 cards (one "page")
+    const pageW = (cardW + GAP) * 6
+    el.scrollBy({ left: dir === 'right' ? pageW : -pageW, behavior: 'smooth' })
   }
 
   const showArrows = categories.length > 6
 
   return (
-    <section style={{ padding: '36px 0 20px' }}>
+    <section style={{ padding: '36px 0 24px' }}>
       <style>{`
         @keyframes catFadeUp {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
-        .cat-item {
-          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-        }
-        .cat-item:hover {
-          transform: translateY(-4px) !important;
-        }
-        .cat-circle {
-          transition: background 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
-        }
-        .cat-item:hover .cat-circle {
-          background: linear-gradient(145deg, #6C3AF5 0%, #9B6FF5 100%) !important;
-          box-shadow: 0 8px 24px rgba(108,58,245,0.20) !important;
-          border-color: transparent !important;
-        }
-        .cat-item:hover .cat-emoji {
-          filter: brightness(0) invert(1) !important;
-          transform: scale(1.08) !important;
-        }
-        .cat-item:hover .cat-img {
-          filter: brightness(0) invert(1) !important;
-          transform: scale(1.08) !important;
-        }
-        .cat-emoji {
-          transition: filter 0.22s ease, transform 0.22s ease !important;
-        }
-        .cat-img {
-          transition: filter 0.22s ease, transform 0.22s ease !important;
-        }
-        .cat-label {
-          transition: color 0.22s ease !important;
-        }
-        .cat-item:hover .cat-label {
-          color: #6C3AF5 !important;
-        }
-
-        .arr-btn {
-          transition: all 0.18s ease !important;
-        }
+        .arr-btn { transition: all 0.18s ease !important; }
         .arr-btn:not(:disabled):hover {
           background: #6C3AF5 !important;
           border-color: #6C3AF5 !important;
-          box-shadow: 0 4px 14px rgba(108,58,245,0.25) !important;
+          box-shadow: 0 4px 14px rgba(108,58,245,0.22) !important;
         }
-        .arr-btn:not(:disabled):hover .arr-icon {
-          stroke: white !important;
-        }
-
+        .arr-btn:not(:disabled):hover .arr-icon { stroke: white !important; }
         .cat-scroll::-webkit-scrollbar { display: none; }
         .cat-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="page-container">
+      <div className="page-container" ref={containerRef}>
 
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', marginBottom: '22px',
+          justifyContent: 'space-between', marginBottom: '24px',
           animation: 'catFadeUp 0.4s ease both',
         }}>
           <div>
@@ -120,10 +91,7 @@ export default function CategoryGrid() {
             }}>
               Browse Categories
             </h2>
-            <p style={{
-              fontSize: '13px', color: '#94A3B8',
-              fontFamily: "'DM Sans', sans-serif",
-            }}>
+            <p style={{ fontSize: '13px', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif" }}>
               What are you looking for?
             </p>
           </div>
@@ -161,18 +129,16 @@ export default function CategoryGrid() {
           )}
         </div>
 
-        {/* Scrollable row — max 6 visible */}
+        {/* Scroll row — exactly 6 visible, rest hidden until scroll */}
         <div
           ref={scrollRef}
           className="cat-scroll"
           style={{
             display: 'flex',
             gap: `${GAP}px`,
-            overflowX: 'auto',
-            paddingBottom: '10px',
+            overflowX: showArrows ? 'auto' : 'visible',
+            paddingBottom: '4px',
             paddingTop: '4px',
-            // Clip to exactly 6 items. 6 * 96 + 5 * 18 = 576 + 90 = 666px
-            // But let container be fluid — items just overflow and scroll
           }}
         >
           {categories.map((cat, i) => (
@@ -182,85 +148,60 @@ export default function CategoryGrid() {
               style={{ textDecoration: 'none', flexShrink: 0 }}
             >
               <div
-                className="cat-item"
                 style={{
-                  width: `${CARD_W}px`,
+                  width: `${cardW}px`,
                   display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', gap: '10px',
+                  alignItems: 'center', gap: '12px',
                   cursor: 'pointer',
-                  animation: `catFadeUp 0.35s ease ${Math.min(i, 5) * 0.055}s both`,
+                  animation: `catFadeUp 0.38s ease ${Math.min(i, 5) * 0.06}s both`,
                 }}
               >
                 {/* Circle */}
-                <div
-                  className="cat-circle"
-                  style={{
-                    width: '76px', height: '76px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(145deg, #F3EEFF 0%, #FAF7FF 100%)',
-                    border: '1.5px solid #E9E2FF',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                  }}
-                >
+                <div style={{
+                  width: `${cardW}px`,
+                  height: `${cardW}px`,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(145deg, #F0EBFF 0%, #F8F5FF 100%)',
+                  border: '1.5px solid #E9E2FF',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}>
                   {cat.iconUrl ? (
                     <img
                       src={cat.iconUrl}
                       alt={cat.name}
-                      className="cat-img"
                       style={{
-                        width: `${Math.min(cat.iconSize || 38, 46)}px`,
-                        height: `${Math.min(cat.iconSize || 38, 46)}px`,
+                        width: `${Math.round(cardW * 0.52)}px`,
+                        height: `${Math.round(cardW * 0.52)}px`,
                         objectFit: 'contain',
                       }}
                     />
                   ) : (
-                    <span
-                      className="cat-emoji"
-                      style={{ fontSize: '32px', lineHeight: 1, userSelect: 'none' }}
-                    >
+                    <span style={{
+                      fontSize: `${Math.round(cardW * 0.38)}px`,
+                      lineHeight: 1, userSelect: 'none',
+                    }}>
                       {cat.icon || '📦'}
                     </span>
                   )}
                 </div>
 
                 {/* Label */}
-                <p
-                  className="cat-label"
-                  style={{
-                    fontSize: '12px', fontWeight: '700',
-                    color: '#475569',
-                    fontFamily: "'DM Sans', sans-serif",
-                    textAlign: 'center', lineHeight: '1.3',
-                    maxWidth: `${CARD_W}px`,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}
-                >
+                <p style={{
+                  fontSize: '13px', fontWeight: '600',
+                  color: '#374151',
+                  fontFamily: "'DM Sans', sans-serif",
+                  textAlign: 'center', lineHeight: '1.3',
+                  maxWidth: `${cardW}px`,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
                   {cat.name}
                 </p>
               </div>
             </Link>
           ))}
         </div>
-
-        {/* Scroll dots */}
-        {showArrows && (
-          <div style={{
-            display: 'flex', justifyContent: 'center',
-            gap: '5px', marginTop: '14px',
-          }}>
-            {Array.from({ length: Math.ceil(categories.length / 6) }).map((_, i) => (
-              <span key={i} style={{
-                display: 'inline-block',
-                width: i === 0 ? '18px' : '6px', height: '6px',
-                borderRadius: '3px',
-                background: i === 0 ? '#6C3AF5' : '#DDD6FE',
-                transition: 'all 0.2s',
-              }} />
-            ))}
-          </div>
-        )}
 
       </div>
     </section>
