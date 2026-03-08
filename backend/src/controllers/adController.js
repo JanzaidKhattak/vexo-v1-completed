@@ -35,13 +35,41 @@ const getAds = async (req, res) => {
 const getAdById = async (req, res) => {
   try {
     const ad = await Ad.findById(req.params.id)
-      .populate('seller', 'name phone avatar location createdAt')
+      .populate('seller', 'name firstName lastName phone avatar location createdAt isEmailVerified')
 
     if (!ad) return res.status(404).json({ success: false, message: 'Ad not found' })
 
     await Ad.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } })
 
-    return res.status(200).json({ success: true, ad })
+    // Seller ka active ads count
+    const sellerAdCount = await Ad.countDocuments({
+      seller: ad.seller._id,
+      status: 'active',
+      isDeletedByUser: false
+    })
+
+    return res.status(200).json({ success: true, ad, sellerAdCount })
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+
+const getRelatedAds = async (req, res) => {
+  try {
+    const ad = await Ad.findById(req.params.id)
+    if (!ad) return res.status(404).json({ success: false, message: 'Ad not found' })
+
+    const related = await Ad.find({
+      _id: { $ne: req.params.id },
+      category: ad.category,
+      status: 'active',
+      isDeletedByUser: false
+    })
+      .populate('seller', 'name firstName lastName avatar')
+      .sort({ createdAt: -1 })
+      .limit(8)
+
+    return res.status(200).json({ success: true, ads: related })
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server error' })
   }
@@ -85,7 +113,6 @@ const updateAd = async (req, res) => {
     const { title, description, price, area, details } = req.body
     const newImages = req.files ? req.files.map(f => f.path) : []
 
-    // Changes track karo diff ke liye
     const changes = {}
     if (title && title !== ad.title) changes.title = { old: ad.title, new: title }
     if (description && description !== ad.description) changes.description = { old: ad.description, new: description }
@@ -104,12 +131,11 @@ const updateAd = async (req, res) => {
 
     await ad.save()
 
-    // Admin ko notification
     const admins = await User.find({ role: 'admin' })
     for (const admin of admins) {
       await createNotification(
         admin._id,
-        '✏️ Ad Updated by User',
+        'Ad Updated by User',
         `User has updated the ad "${ad.title}". Review is pending.`,
         'general',
         `/admin/ads`
@@ -134,7 +160,6 @@ const deleteAd = async (req, res) => {
 
     const adTitle = ad.title
 
-    // Cloudinary se images delete karo
     for (const imageUrl of ad.images) {
       const publicId = imageUrl.split('/').slice(-2).join('/').split('.')[0]
       await cloudinary.uploader.destroy(publicId)
@@ -143,13 +168,12 @@ const deleteAd = async (req, res) => {
     await Ad.findByIdAndDelete(req.params.id)
     await User.findByIdAndUpdate(ad.seller, { $inc: { totalAds: -1 } })
 
-    // Admin ko notification (agar user ne delete kiya)
     if (req.user.role !== 'admin') {
       const admins = await User.find({ role: 'admin' })
       for (const admin of admins) {
         await createNotification(
           admin._id,
-          '🗑️ Ad Deleted by User',
+          'Ad Deleted by User',
           `User has deleted their ad "${adTitle}".`,
           'general',
           `/admin/ads`
@@ -203,12 +227,11 @@ const markAsSold = async (req, res) => {
     ad.soldAt = new Date()
     await ad.save()
 
-    // Admin ko notification
     const admins = await User.find({ role: 'admin' })
     for (const admin of admins) {
       await createNotification(
         admin._id,
-        '✅ Ad Marked as Sold',
+        'Ad Marked as Sold',
         `User has marked the ad "${ad.title}" as sold.`,
         'general',
         `/admin/ads`
@@ -221,4 +244,4 @@ const markAsSold = async (req, res) => {
   }
 }
 
-module.exports = { getAds, getAdById, createAd, updateAd, deleteAd, getTrendingAds, getRecentAds, markAsSold }
+module.exports = { getAds, getAdById, createAd, updateAd, deleteAd, getTrendingAds, getRecentAds, markAsSold, getRelatedAds }
