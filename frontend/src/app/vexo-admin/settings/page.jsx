@@ -333,7 +333,7 @@ export default function AdminSettingsPage() {
       setPrimaryColor(s.primaryColor || "#6C3AF5");
       setSecondaryColor(s.secondaryColor || "#F59E0B");
       setFontFamily(s.fontFamily || "Inter");
-      setCategories(s.categories || []);
+      setCategories((s.categories || []).map(c => ({ showOnHome: true, ...c })));
       setWhatsappNumber(s.whatsappNumber || "");
       setFacebookUrl(s.facebookUrl || "");
       setInstagramUrl(s.instagramUrl || "");

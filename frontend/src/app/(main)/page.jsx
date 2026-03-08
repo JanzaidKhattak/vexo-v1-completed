@@ -85,7 +85,7 @@ export default function HomePage() {
   // Build sections from settings categories where showOnHome === true
   // Falls back to static list if settings not available
   const activeSections = (() => {
-    const cats = settings?.categories?.filter(c => c.isActive && c.showOnHome)
+    const cats = settings?.categories?.filter(c => c.isActive && (c.showOnHome === true || c.showOnHome === undefined || c.showOnHome === null))
     if (cats && cats.length > 0) {
       return cats.map(cat => ({
         category: cat.id,
