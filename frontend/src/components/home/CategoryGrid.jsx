@@ -9,82 +9,114 @@ export default function CategoryGrid() {
   const { settings } = useSiteSettings()
   const scrollRef = useRef(null)
   const [canLeft,  setCanLeft]  = useState(false)
-  const [canRight, setCanRight] = useState(true)
+  const [canRight, setCanRight] = useState(false)
 
-  // Build category list from settings (active ones), fallback to CATEGORIES constant
   const categories = (() => {
     const cats = settings?.categories?.filter(c => c.isActive)
     if (cats && cats.length > 0) return cats
     return CATEGORIES
   })()
 
+  const CARD_W = 96
+  const GAP    = 18
+
   const checkScroll = () => {
     const el = scrollRef.current
     if (!el) return
-    setCanLeft(el.scrollLeft > 8)
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8)
+    setCanLeft(el.scrollLeft > 4)
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
   }
 
   useEffect(() => {
-    checkScroll()
     const el = scrollRef.current
-    if (el) el.addEventListener('scroll', checkScroll, { passive: true })
-    return () => el?.removeEventListener('scroll', checkScroll)
+    if (!el) return
+    checkScroll()
+    el.addEventListener('scroll', checkScroll, { passive: true })
+    const ro = new ResizeObserver(checkScroll)
+    ro.observe(el)
+    return () => { el.removeEventListener('scroll', checkScroll); ro.disconnect() }
   }, [categories])
 
   const scroll = (dir) => {
     const el = scrollRef.current
     if (!el) return
-    // scroll by ~3 cards
-    el.scrollBy({ left: dir === 'right' ? 320 : -320, behavior: 'smooth' })
+    el.scrollBy({ left: dir === 'right' ? (CARD_W + GAP) * 3 : -(CARD_W + GAP) * 3, behavior: 'smooth' })
   }
 
+  const showArrows = categories.length > 6
+
   return (
-    <section style={{ padding: '40px 0 24px' }}>
+    <section style={{ padding: '36px 0 20px' }}>
       <style>{`
-        @keyframes fadeUp {
+        @keyframes catFadeUp {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .cat-card {
-          transition: all 0.18s ease !important;
+
+        .cat-item {
+          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         }
-        .cat-card:hover {
-          transform: translateY(-4px) scale(1.04) !important;
-          box-shadow: 0 8px 24px rgba(108,58,245,0.13) !important;
-          border-color: #6C3AF5 !important;
+        .cat-item:hover {
+          transform: translateY(-4px) !important;
         }
-        .cat-card:hover .cat-label {
+        .cat-circle {
+          transition: background 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+        }
+        .cat-item:hover .cat-circle {
+          background: linear-gradient(145deg, #6C3AF5 0%, #9B6FF5 100%) !important;
+          box-shadow: 0 8px 24px rgba(108,58,245,0.20) !important;
+          border-color: transparent !important;
+        }
+        .cat-item:hover .cat-emoji {
+          filter: brightness(0) invert(1) !important;
+          transform: scale(1.08) !important;
+        }
+        .cat-item:hover .cat-img {
+          filter: brightness(0) invert(1) !important;
+          transform: scale(1.08) !important;
+        }
+        .cat-emoji {
+          transition: filter 0.22s ease, transform 0.22s ease !important;
+        }
+        .cat-img {
+          transition: filter 0.22s ease, transform 0.22s ease !important;
+        }
+        .cat-label {
+          transition: color 0.22s ease !important;
+        }
+        .cat-item:hover .cat-label {
           color: #6C3AF5 !important;
         }
+
         .arr-btn {
-          transition: all 0.15s ease !important;
+          transition: all 0.18s ease !important;
         }
-        .arr-btn:hover {
+        .arr-btn:not(:disabled):hover {
           background: #6C3AF5 !important;
           border-color: #6C3AF5 !important;
           box-shadow: 0 4px 14px rgba(108,58,245,0.25) !important;
         }
-        .arr-btn:hover svg {
+        .arr-btn:not(:disabled):hover .arr-icon {
           stroke: white !important;
         }
-        /* hide scrollbar */
+
         .cat-scroll::-webkit-scrollbar { display: none; }
         .cat-scroll { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
       <div className="page-container">
-        {/* Header row */}
+
+        {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', marginBottom: '20px',
-          animation: 'fadeUp 0.4s ease',
+          justifyContent: 'space-between', marginBottom: '22px',
+          animation: 'catFadeUp 0.4s ease both',
         }}>
           <div>
             <h2 style={{
               fontSize: '20px', fontWeight: '800', color: '#0f172a',
-              fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em',
-              marginBottom: '2px',
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: '-0.02em', marginBottom: '2px',
             }}>
               Browse Categories
             </h2>
@@ -96,53 +128,51 @@ export default function CategoryGrid() {
             </p>
           </div>
 
-          {/* Arrow buttons */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => scroll('left')}
-              className="arr-btn"
-              disabled={!canLeft}
-              style={{
-                width: '36px', height: '36px', borderRadius: '50%',
-                border: '1.5px solid #E2E8F0', background: 'white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: canLeft ? 'pointer' : 'not-allowed',
-                opacity: canLeft ? 1 : 0.35,
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="arr-btn"
-              disabled={!canRight}
-              style={{
-                width: '36px', height: '36px', borderRadius: '50%',
-                border: '1.5px solid #E2E8F0', background: 'white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: canRight ? 'pointer' : 'not-allowed',
-                opacity: canRight ? 1 : 0.35,
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </button>
-          </div>
+          {showArrows && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {['left', 'right'].map(dir => {
+                const active = dir === 'left' ? canLeft : canRight
+                return (
+                  <button
+                    key={dir}
+                    onClick={() => scroll(dir)}
+                    disabled={!active}
+                    className="arr-btn"
+                    style={{
+                      width: '34px', height: '34px', borderRadius: '50%',
+                      border: '1.5px solid #E2E8F0', background: 'white',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: active ? 'pointer' : 'default',
+                      opacity: active ? 1 : 0.28, flexShrink: 0,
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline
+                        className="arr-icon"
+                        stroke="#64748B"
+                        points={dir === 'left' ? '15 18 9 12 15 6' : '9 18 15 12 9 6'}
+                      />
+                    </svg>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Scrollable row */}
+        {/* Scrollable row — max 6 visible */}
         <div
           ref={scrollRef}
           className="cat-scroll"
           style={{
             display: 'flex',
-            gap: '12px',
+            gap: `${GAP}px`,
             overflowX: 'auto',
-            paddingBottom: '6px',
+            paddingBottom: '10px',
             paddingTop: '4px',
+            // Clip to exactly 6 items. 6 * 96 + 5 * 18 = 576 + 90 = 666px
+            // But let container be fluid — items just overflow and scroll
           }}
         >
           {categories.map((cat, i) => (
@@ -152,39 +182,46 @@ export default function CategoryGrid() {
               style={{ textDecoration: 'none', flexShrink: 0 }}
             >
               <div
-                className="cat-card"
+                className="cat-item"
                 style={{
-                  width: '100px',
-                  background: 'white',
-                  border: '1.5px solid #E2E8F0',
-                  borderRadius: '16px',
-                  padding: '18px 10px 14px',
-                  textAlign: 'center',
+                  width: `${CARD_W}px`,
+                  display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', gap: '10px',
                   cursor: 'pointer',
-                  animation: `fadeUp 0.35s ease ${i * 0.04}s both`,
+                  animation: `catFadeUp 0.35s ease ${Math.min(i, 5) * 0.055}s both`,
                 }}
               >
-                {/* Icon — image or emoji */}
-                <div style={{
-                  width: '52px', height: '52px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #EDE9FE 0%, #F5F3FF 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 10px',
-                  overflow: 'hidden',
-                }}>
+                {/* Circle */}
+                <div
+                  className="cat-circle"
+                  style={{
+                    width: '76px', height: '76px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(145deg, #F3EEFF 0%, #FAF7FF 100%)',
+                    border: '1.5px solid #E9E2FF',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                  }}
+                >
                   {cat.iconUrl ? (
                     <img
                       src={cat.iconUrl}
                       alt={cat.name}
+                      className="cat-img"
                       style={{
-                        width: `${cat.iconSize || 28}px`,
-                        height: `${cat.iconSize || 28}px`,
+                        width: `${Math.min(cat.iconSize || 38, 46)}px`,
+                        height: `${Math.min(cat.iconSize || 38, 46)}px`,
                         objectFit: 'contain',
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: '24px', lineHeight: 1 }}>{cat.icon || '📦'}</span>
+                    <span
+                      className="cat-emoji"
+                      style={{ fontSize: '32px', lineHeight: 1, userSelect: 'none' }}
+                    >
+                      {cat.icon || '📦'}
+                    </span>
                   )}
                 </div>
 
@@ -193,10 +230,11 @@ export default function CategoryGrid() {
                   className="cat-label"
                   style={{
                     fontSize: '12px', fontWeight: '700',
-                    color: '#334155',
+                    color: '#475569',
                     fontFamily: "'DM Sans', sans-serif",
-                    lineHeight: '1.3',
-                    transition: 'color 0.15s',
+                    textAlign: 'center', lineHeight: '1.3',
+                    maxWidth: `${CARD_W}px`,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}
                 >
                   {cat.name}
@@ -205,6 +243,25 @@ export default function CategoryGrid() {
             </Link>
           ))}
         </div>
+
+        {/* Scroll dots */}
+        {showArrows && (
+          <div style={{
+            display: 'flex', justifyContent: 'center',
+            gap: '5px', marginTop: '14px',
+          }}>
+            {Array.from({ length: Math.ceil(categories.length / 6) }).map((_, i) => (
+              <span key={i} style={{
+                display: 'inline-block',
+                width: i === 0 ? '18px' : '6px', height: '6px',
+                borderRadius: '3px',
+                background: i === 0 ? '#6C3AF5' : '#DDD6FE',
+                transition: 'all 0.2s',
+              }} />
+            ))}
+          </div>
+        )}
+
       </div>
     </section>
   )
