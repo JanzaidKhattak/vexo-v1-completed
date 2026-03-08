@@ -95,7 +95,7 @@ if (blacklisted) {
 
     // Send verification email
     await resend.emails.send({
-      from: 'Vexo <onboarding@resend.dev>',
+      from: 'Vexo <noreply@toolscorner.net>',
       to: email,
       subject: 'Verify your Vexo account',
       html: `
@@ -209,7 +209,7 @@ const sendVerifyOtp = async (req, res) => {
     await user.save()
 
     await resend.emails.send({
-      from: 'Vexo <onboarding@resend.dev>',
+      from: 'Vexo <noreply@toolscorner.net>',
       to: user.email,
       subject: 'Verify your Vexo email',
       html: `
@@ -295,7 +295,7 @@ const forgotPassword = async (req, res) => {
     await user.save()
 
     await resend.emails.send({
-      from: 'Vexo <onboarding@resend.dev>',
+      from: 'Vexo <noreply@toolscorner.net>',
       to: email,
       subject: 'Reset your Vexo password',
       html: `
