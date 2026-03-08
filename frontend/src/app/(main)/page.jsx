@@ -10,7 +10,6 @@ import AdBannerSlot from '../../components/home/AdBannerSlot'
 import api from '../../lib/axios'
 import Link from 'next/link'
 import { useSiteSettings } from '../../context/SiteSettingsContext'
-import { CATEGORIES } from '../../constants/categories'
 
 function SectionHeader({ title, subtitle, href }) {
   return (
@@ -24,10 +23,9 @@ function SectionHeader({ title, subtitle, href }) {
           fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em',
           marginBottom: '3px',
         }}>{title}</h2>
-        <p style={{
-          fontSize: '13px', color: '#94A3B8',
-          fontFamily: "'DM Sans', sans-serif",
-        }}>{subtitle}</p>
+        <p style={{ fontSize: '13px', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif" }}>
+          {subtitle}
+        </p>
       </div>
       {href && (
         <Link href={href} style={{
@@ -45,16 +43,6 @@ function SectionHeader({ title, subtitle, href }) {
     </div>
   )
 }
-
-// Fallback static sections if settings not loaded yet
-const STATIC_SECTIONS = [
-  { category: 'mobiles',       title: 'Latest Mobiles',    subtitle: 'Fresh mobile listings in Attock',  href: '/category/mobiles'       },
-  { category: 'cars',          title: 'Cars for Sale',     subtitle: 'Find your next car in Attock',     href: '/category/cars'          },
-  { category: 'motorcycles',   title: 'Motorcycles',       subtitle: 'Bikes available in Attock',        href: '/category/motorcycles'   },
-  { category: 'electronics',   title: 'Electronics',       subtitle: 'TVs, ACs & more',                  href: '/category/electronics'   },
-  { category: 'furniture-home',title: 'Furniture & Home',  subtitle: 'Home essentials',                  href: '/category/furniture-home'},
-  { category: 'fashion-beauty',title: 'Fashion & Beauty',  subtitle: 'Clothing, accessories & more',     href: '/category/fashion-beauty'},
-]
 
 export default function HomePage() {
   const { settings } = useSiteSettings()
@@ -82,19 +70,18 @@ export default function HomePage() {
   const getAdsByCategory = (categoryId) =>
     recentAds.filter(ad => ad.category === categoryId).slice(0, 4)
 
-  // Build sections from settings categories where showOnHome === true
-  // Falls back to static list if settings not available
+  // Only show categories where BOTH isActive=true AND showOnHome=true (strict check)
+  // If settings not loaded yet → show nothing until loaded (avoid flash)
   const activeSections = (() => {
-    const cats = settings?.categories?.filter(c => c.isActive && (c.showOnHome === true || c.showOnHome === undefined || c.showOnHome === null))
-    if (cats && cats.length > 0) {
-      return cats.map(cat => ({
+    if (!settings?.categories) return []
+    return settings.categories
+      .filter(c => c.isActive === true && c.showOnHome === true)
+      .map(cat => ({
         category: cat.id,
         title: cat.name,
         subtitle: `Latest ${cat.name} listings in Attock`,
         href: `/category/${cat.id}`,
       }))
-    }
-    return STATIC_SECTIONS
   })()
 
   return (
@@ -126,26 +113,18 @@ export default function HomePage() {
           <AdBannerSlot type="banner" />
         </div>
 
-        {/* Dynamic Category Sections */}
-        {activeSections.map((s, i) => {
-          const ads = getAdsByCategory(s.category)
-          // Skip section if no ads at all (optional: remove this check to always show)
-          return (
-            <section key={s.category} style={{ marginTop: '48px' }}>
-              <SectionHeader
-                title={s.title}
-                subtitle={s.subtitle}
-                href={s.href}
-              />
-              <RecentAds ads={ads} loading={loading} />
-              {i === 2 && (
-                <div style={{ marginTop: '40px' }}>
-                  <AdBannerSlot type="leaderboard" />
-                </div>
-              )}
-            </section>
-          )
-        })}
+        {/* Dynamic Category Sections — strict showOnHome check */}
+        {activeSections.map((s, i) => (
+          <section key={s.category} style={{ marginTop: '48px' }}>
+            <SectionHeader title={s.title} subtitle={s.subtitle} href={s.href} />
+            <RecentAds ads={getAdsByCategory(s.category)} loading={loading} />
+            {i === 2 && (
+              <div style={{ marginTop: '40px' }}>
+                <AdBannerSlot type="leaderboard" />
+              </div>
+            )}
+          </section>
+        ))}
 
       </div>
     </div>
