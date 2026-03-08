@@ -260,58 +260,7 @@ export default function AdDetailPage() {
                 </div>
               )}
 
-              {/* Related Ads */}
-              {relatedAds.length > 0 && (
-                <div style={{ background: 'white', borderRadius: '18px', padding: '26px', border: '1px solid #E2E8F0', marginBottom: '14px', boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-                    <h2 style={{ fontSize: '12px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif" }}>Related Ads</h2>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {['prev', 'next'].map(dir => (
-                        <button key={dir} onClick={() => scrollRelated(dir)} className="arrow-btn" style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid #E2E8F0', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            {dir === 'prev' ? <polyline points="15 18 9 12 15 6"/> : <polyline points="9 18 15 12 9 6"/>}
-                          </svg>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div ref={relatedRef} style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '4px' }}>
-                    {relatedAds.map(r => <RelatedCard key={r._id} ad={r} />)}
-                  </div>
-                </div>
-              )}
 
-              {/* Safety */}
-              <div style={{ background: 'white', borderRadius: '18px', padding: '26px', border: '1px solid #E2E8F0', marginBottom: '14px', boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}>
-                <h2 style={{ fontSize: '12px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px' }}>Your Safety Matters</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {[
-                    'Meet in a safe, public location when exchanging items or money.',
-                    'Never send advance payments without physically verifying the product.',
-                    'Inspect the item carefully before making any payment.',
-                    'Report suspicious ads or unusual seller behavior immediately.',
-                  ].map((tip, i) => (
-                    <div key={i} className="safety-row" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 14px', borderRadius: '10px', border: '1px solid #F1F5F9', transition: 'background 0.15s' }}>
-                      <div style={{ width: '22px', height: '22px', borderRadius: '6px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6C3AF5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                        </svg>
-                      </div>
-                      <p style={{ fontSize: '13px', color: '#475569', fontFamily: "'DM Sans', sans-serif", lineHeight: '1.55', fontWeight: '500' }}>{tip}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Report */}
-              <div style={{ background: 'white', borderRadius: '18px', padding: '16px 26px', border: '1px solid #E2E8F0', boxShadow: '0 1px 4px rgba(0,0,0,0.03)' }}>
-                <button onClick={() => setShowReport(true)} className="report-trigger" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#CBD5E1', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", transition: 'color 0.15s', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
-                  </svg>
-                  Report this ad
-                </button>
-              </div>
             </div>
 
             {/* ── RIGHT ────────────────────────────────────────────── */}
@@ -346,8 +295,16 @@ export default function AdDetailPage() {
                   <a href={`tel:${ad.seller?.phone}`} className="call-btn" style={{ display: 'block', textAlign: 'center', padding: '14px', background: '#6C3AF5', color: 'white', borderRadius: '12px', textDecoration: 'none', fontSize: '15px', fontWeight: '800', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px', transition: 'all 0.2s ease', boxShadow: '0 4px 16px rgba(108,58,245,0.28)' }}>
                     Call Seller
                   </a>
-                  <button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied!') }} className="share-btn" style={{ width: '100%', padding: '12px', border: '1.5px solid #E2E8F0', borderRadius: '12px', background: 'white', color: '#64748B', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', transition: 'all 0.15s', marginBottom: '20px' }}>
+                  <button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied!') }} className="share-btn" style={{ width: '100%', padding: '12px', border: '1.5px solid #E2E8F0', borderRadius: '12px', background: 'white', color: '#64748B', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', transition: 'all 0.15s', marginBottom: '12px' }}>
                     Share Ad
+                  </button>
+
+                  {/* Report — right sidebar */}
+                  <button onClick={() => setShowReport(true)} className="report-trigger" style={{ width: '100%', padding: '10px', background: 'none', border: '1.5px dashed #E2E8F0', borderRadius: '12px', cursor: 'pointer', color: '#CBD5E1', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', marginBottom: '20px' }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                    </svg>
+                    Report this ad
                   </button>
                 </div>
 
@@ -389,6 +346,53 @@ export default function AdDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* ── FULL WIDTH: Related Ads ─────────────────────────── */}
+          {relatedAds.length > 0 && (
+            <div style={{ background: 'white', borderRadius: '18px', padding: '26px 28px', border: '1px solid #E2E8F0', marginTop: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.03)', animation: 'fadeUp 0.5s ease 0.2s both' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <div>
+                  <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.01em' }}>Related Ads</h2>
+                  <p style={{ fontSize: '12px', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", marginTop: '2px' }}>More from this category</p>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {['prev', 'next'].map(dir => (
+                    <button key={dir} onClick={() => scrollRelated(dir)} className="arrow-btn" style={{ width: '36px', height: '36px', borderRadius: '10px', border: '1.5px solid #E2E8F0', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {dir === 'prev' ? <polyline points="15 18 9 12 15 6"/> : <polyline points="9 18 15 12 9 6"/>}
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div ref={relatedRef} style={{ display: 'flex', gap: '14px', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: '4px' }}>
+                {relatedAds.map(r => <RelatedCard key={r._id} ad={r} />)}
+              </div>
+            </div>
+          )}
+
+          {/* ── FULL WIDTH: Safety ─────────────────────────────── */}
+          <div style={{ background: 'white', borderRadius: '18px', padding: '26px 28px', border: '1px solid #E2E8F0', marginTop: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.03)', animation: 'fadeUp 0.5s ease 0.25s both' }}>
+            <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.01em', marginBottom: '16px' }}>Your Safety Matters</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+              {[
+                'Meet in a safe, public location when exchanging items or money.',
+                'Never send advance payments without physically verifying the product.',
+                'Inspect the item carefully before making any payment.',
+                'Report suspicious ads or unusual seller behavior immediately.',
+              ].map((tip, i) => (
+                <div key={i} className="safety-row" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px 16px', borderRadius: '12px', border: '1px solid #F1F5F9', transition: 'background 0.15s' }}>
+                  <div style={{ width: '24px', height: '24px', borderRadius: '7px', background: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6C3AF5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#475569', fontFamily: "'DM Sans', sans-serif", lineHeight: '1.6', fontWeight: '500' }}>{tip}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
 
