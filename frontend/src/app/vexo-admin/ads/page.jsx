@@ -13,9 +13,7 @@ export default function AdminAdsPage() {
   const [selectedAd, setSelectedAd] = useState(null)
   const [showDiff, setShowDiff] = useState(false)
 
-  useEffect(() => {
-    fetchAds()
-  }, [filter])
+  useEffect(() => { fetchAds() }, [filter])
 
   const getToken = () => localStorage.getItem('vexo_admin_token')
 
@@ -34,9 +32,7 @@ export default function AdminAdsPage() {
   }
 
   const handleStatus = async (id, status) => {
-    const confirmMsg =
-      status === 'active' ? 'Approve this ad?' :
-      status === 'rejected' ? 'Reject this ad?' : ''
+    const confirmMsg = status === 'active' ? 'Approve this ad?' : 'Reject this ad?'
     if (!window.confirm(confirmMsg)) return
     try {
       await api.patch(`/admin/ads/${id}/status`, { status }, {
@@ -50,32 +46,41 @@ export default function AdminAdsPage() {
   }
 
   const tabs = [
-    { key: 'pending', label: '⏳ Pending' },
-    { key: 'active', label: '✅ Active' },
-    { key: 'rejected', label: '❌ Rejected' },
-    { key: 'sold', label: '🏷️ Sold' },
-    { key: 'deleted', label: '🗑️ Deleted' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'active',  label: 'Active'  },
+    { key: 'rejected',label: 'Rejected'},
+    { key: 'sold',    label: 'Sold'    },
+    { key: 'deleted', label: 'Deleted' },
   ]
 
-  const tabStyle = (key) => ({
-    padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
-    fontWeight: '600', fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-    border: 'none',
-    background: filter === key ? '#6C3AF5' : 'white',
-    color: filter === key ? 'white' : '#64748B',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  })
-
   return (
-    <div style={{ padding: '32px' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', fontFamily: 'Inter, sans-serif', marginBottom: '24px', letterSpacing: '-0.02em' }}>
-        Manage Ads
-      </h1>
+    <div style={{ padding: '32px', background: '#F8FAFC', minHeight: '100vh' }}>
+      <style>{`
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .ad-row:hover { border-color: #C4B5FD !important; box-shadow: 0 4px 16px rgba(108,58,245,0.07) !important; }
+        .tab-btn:hover { border-color: #6C3AF5 !important; color: #6C3AF5 !important; }
+      `}</style>
+
+      <div style={{ marginBottom: '28px', animation: 'fadeUp 0.4s ease' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em', marginBottom: '4px' }}>
+          Manage Ads
+        </h1>
+        <p style={{ color: '#94A3B8', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
+          Review, approve and manage all listings
+        </p>
+      </div>
 
       {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap', animation: 'fadeUp 0.4s ease 0.05s both' }}>
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setFilter(t.key)} style={tabStyle(t.key)}>
+          <button key={t.key} onClick={() => setFilter(t.key)} className="tab-btn" style={{
+            padding: '8px 18px', borderRadius: '10px', fontSize: '13px',
+            fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
+            transition: 'all 0.15s',
+            border: `1.5px solid ${filter === t.key ? '#6C3AF5' : '#E2E8F0'}`,
+            background: filter === t.key ? '#6C3AF5' : 'white',
+            color: filter === t.key ? 'white' : '#64748B',
+          }}>
             {t.label}
           </button>
         ))}
@@ -83,114 +88,113 @@ export default function AdminAdsPage() {
 
       {/* Diff Modal */}
       {showDiff && selectedAd && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: '20px',
-        }}>
-          <div style={{
-            background: 'white', borderRadius: '16px', padding: '28px',
-            maxWidth: '520px', width: '100%', maxHeight: '80vh', overflowY: 'auto',
-          }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '700', fontFamily: 'Inter, sans-serif', marginBottom: '16px' }}>
-              ✏️ Update History — {selectedAd.title}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '18px', padding: '28px', maxWidth: '520px', width: '100%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
+            <h3 style={{ fontSize: '17px', fontWeight: '800', fontFamily: "'DM Sans', sans-serif", color: '#0f172a', marginBottom: '16px' }}>
+              Update History — {selectedAd.title}
             </h3>
             {selectedAd.updateHistory?.length > 0 ? (
               selectedAd.updateHistory.map((entry, i) => (
-                <div key={i} style={{ marginBottom: '16px', padding: '14px', border: '1px solid #E2E8F0', borderRadius: '10px' }}>
-                  <p style={{ fontSize: '12px', color: '#94A3B8', fontFamily: 'Inter, sans-serif', marginBottom: '10px' }}>
-                    🕐 {new Date(entry.updatedAt).toLocaleString('en-PK')}
+                <div key={i} style={{ marginBottom: '16px', padding: '14px', border: '1px solid #E2E8F0', borderRadius: '12px' }}>
+                  <p style={{ fontSize: '12px', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>
+                    {new Date(entry.updatedAt).toLocaleString('en-PK')}
                   </p>
-                  {Object.entries(entry.changes || {}).map(([field, val]) => (
+                  {Object.entries(entry.changes || {}).map(([field, val]) =>
                     val?.old !== undefined && (
                       <div key={field} style={{ marginBottom: '8px' }}>
-                        <p style={{ fontSize: '12px', fontWeight: '600', fontFamily: 'Inter, sans-serif', textTransform: 'capitalize', marginBottom: '4px' }}>{field}</p>
+                        <p style={{ fontSize: '12px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", textTransform: 'capitalize', marginBottom: '4px', color: '#374151' }}>{field}</p>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <div style={{ flex: 1, padding: '8px', background: '#fee2e2', borderRadius: '6px', fontSize: '12px', fontFamily: 'Inter, sans-serif' }}>
-                            <span style={{ fontWeight: '600', color: '#991b1b' }}>Old: </span>{String(val.old)}
+                          <div style={{ flex: 1, padding: '8px', background: '#fee2e2', borderRadius: '8px', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
+                            <span style={{ fontWeight: '700', color: '#991b1b' }}>Old: </span>{String(val.old)}
                           </div>
-                          <div style={{ flex: 1, padding: '8px', background: '#d1fae5', borderRadius: '6px', fontSize: '12px', fontFamily: 'Inter, sans-serif' }}>
-                            <span style={{ fontWeight: '600', color: '#065f46' }}>New: </span>{String(val.new)}
+                          <div style={{ flex: 1, padding: '8px', background: '#d1fae5', borderRadius: '8px', fontSize: '12px', fontFamily: "'DM Sans', sans-serif" }}>
+                            <span style={{ fontWeight: '700', color: '#065f46' }}>New: </span>{String(val.new)}
                           </div>
                         </div>
                       </div>
                     )
-                  ))}
+                  )}
                 </div>
               ))
             ) : (
-              <p style={{ color: '#94A3B8', fontFamily: 'Inter, sans-serif' }}>No changes found.</p>
+              <p style={{ color: '#94A3B8', fontFamily: "'DM Sans', sans-serif" }}>No changes found.</p>
             )}
-            <button onClick={() => { setShowDiff(false); setSelectedAd(null) }} style={{
-              marginTop: '16px', padding: '10px 24px', background: '#6C3AF5',
-              color: 'white', border: 'none', borderRadius: '8px',
-              fontWeight: '600', fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-            }}>Close</button>
+            <button onClick={() => { setShowDiff(false); setSelectedAd(null) }} style={{ marginTop: '16px', padding: '10px 24px', background: '#6C3AF5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}>
+              Close
+            </button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <p style={{ fontFamily: 'Inter, sans-serif', color: '#94A3B8' }}>Loading...</p>
+        <div style={{ textAlign: 'center', padding: '60px', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif" }}>Loading...</div>
       ) : ads.length === 0 ? (
-        <div style={{ background: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', border: '1px solid #E2E8F0' }}>
-          <p style={{ color: '#94A3B8', fontFamily: 'Inter, sans-serif' }}>No {filter} ads found</p>
+        <div style={{ background: 'white', borderRadius: '14px', padding: '48px', textAlign: 'center', border: '1px solid #E2E8F0' }}>
+          <p style={{ color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", fontWeight: '600' }}>No {filter} ads found</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeUp 0.4s ease 0.1s both' }}>
           {ads.map(ad => (
-            <div key={ad._id} style={{
-              background: 'white', borderRadius: '12px', padding: '20px',
-              border: ad.hasUpdate ? '2px solid #f59e0b' : '1px solid #E2E8F0',
-              display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
+            <div key={ad._id} className="ad-row" style={{
+              background: 'white', borderRadius: '14px', padding: '20px 24px',
+              border: ad.hasUpdate ? '2px solid #F59E0B' : '1.5px solid #E2E8F0',
+              display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap',
+              transition: 'all 0.2s',
             }}>
-              <div style={{ width: '80px', height: '80px', borderRadius: '8px', background: '#F1F5F9', overflow: 'hidden', flexShrink: 0 }}>
+              {/* Image */}
+              <div style={{ width: '76px', height: '76px', borderRadius: '10px', background: '#F1F5F9', overflow: 'hidden', flexShrink: 0 }}>
                 {ad.images?.[0] ? (
                   <img src={ad.images[0]} alt={ad.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>📷</div>
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
                 )}
               </div>
+
+              {/* Info */}
               <div style={{ flex: 1, minWidth: '160px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                  <p style={{ fontWeight: '600', fontFamily: 'Inter, sans-serif', color: '#0f172a' }}>{ad.title}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                  <p style={{ fontWeight: '700', fontFamily: "'DM Sans', sans-serif", color: '#0f172a', fontSize: '15px' }}>{ad.title}</p>
                   {ad.hasUpdate && (
-                    <span style={{ padding: '2px 8px', background: '#fef3c7', color: '#92400e', borderRadius: '20px', fontSize: '11px', fontWeight: '700', fontFamily: 'Inter, sans-serif' }}>✏️ UPDATED</span>
+                    <span style={{ padding: '2px 8px', background: '#FEF3C7', color: '#92400E', borderRadius: '20px', fontSize: '10px', fontWeight: '800', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.04em' }}>
+                      UPDATED
+                    </span>
                   )}
                 </div>
-                <p style={{ color: '#6C3AF5', fontWeight: '700', fontFamily: 'Inter, sans-serif', fontSize: '14px', marginBottom: '4px' }}>
+                <p style={{ color: '#6C3AF5', fontWeight: '800', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '4px' }}>
                   Rs {ad.price?.toLocaleString()}
                 </p>
-                <p style={{ color: '#94A3B8', fontSize: '12px', fontFamily: 'Inter, sans-serif' }}>
-                  {ad.category} • {ad.area || 'N/A'} • {ad.seller?.phone || ad.seller?.email || 'N/A'}
+                <p style={{ color: '#94A3B8', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", marginBottom: '2px' }}>
+                  {ad.category} · {ad.area || 'N/A'} · {ad.seller?.phone || ad.seller?.email || 'N/A'}
+                </p>
+                <p style={{ color: '#CBD5E1', fontSize: '11px', fontFamily: "'DM Sans', sans-serif", fontWeight: '700' }}>
+                  Ad ID: #{String(ad._id).slice(-8).toUpperCase()}
                 </p>
                 {filter === 'sold' && ad.soldAt && (
-                  <p style={{ color: '#94A3B8', fontSize: '11px', fontFamily: 'Inter, sans-serif', marginTop: '2px' }}>
+                  <p style={{ color: '#94A3B8', fontSize: '11px', fontFamily: "'DM Sans', sans-serif", marginTop: '2px' }}>
                     Sold: {new Date(ad.soldAt).toLocaleDateString('en-PK')}
                   </p>
                 )}
-                {filter === 'deleted' && ad.deletedAt && (
-                  <p style={{ color: '#94A3B8', fontSize: '11px', fontFamily: 'Inter, sans-serif', marginTop: '2px' }}>
-                    Deleted: {new Date(ad.deletedAt).toLocaleDateString('en-PK')}
-                  </p>
-                )}
               </div>
+
+              {/* Buttons */}
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
-                <button onClick={() => window.open(`/ads/${ad._id}`, '_blank')} style={{ padding: '8px 12px', background: '#EFF6FF', color: '#1D4ED8', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
-                  👁️ View
+                <button onClick={() => window.open(`/ads/${ad._id}`, '_blank')} style={{ padding: '8px 14px', background: '#EFF6FF', color: '#1D4ED8', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}>
+                  View
                 </button>
                 {ad.hasUpdate && (
-                  <button onClick={() => { setSelectedAd(ad); setShowDiff(true) }} style={{ padding: '8px 12px', background: '#fef3c7', color: '#92400e', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '600', fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
-                    📋 See Changes
+                  <button onClick={() => { setSelectedAd(ad); setShowDiff(true) }} style={{ padding: '8px 14px', background: '#FFFBEB', color: '#92400E', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}>
+                    See Changes
                   </button>
                 )}
                 {filter === 'pending' && (
                   <>
-                    <button onClick={() => handleStatus(ad._id, 'active')} style={{ padding: '8px 16px', background: '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
-                      ✅ Approve
+                    <button onClick={() => handleStatus(ad._id, 'active')} style={{ padding: '8px 16px', background: '#10B981', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}>
+                      Approve
                     </button>
-                    <button onClick={() => handleStatus(ad._id, 'rejected')} style={{ padding: '8px 16px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
-                      ❌ Reject
+                    <button onClick={() => handleStatus(ad._id, 'rejected')} style={{ padding: '8px 16px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' }}>
+                      Reject
                     </button>
                   </>
                 )}
