@@ -273,15 +273,22 @@ export default function AdminUsersPage() {
       {showDeleteModal && selectedUser && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ background: 'white', borderRadius: '20px', padding: '32px', maxWidth: '420px', width: '100%' }}>
-            <h3 style={{ fontSize: '20px', fontWeight: '800', fontFamily: 'Inter, sans-serif', color: '#0f172a', marginBottom: '8px' }}>🗑️ Delete User</h3>
-            <p style={{ color: '#64748B', fontFamily: 'Inter, sans-serif', fontSize: '14px', marginBottom: '4px' }}>
-              Deleting: <strong>{selectedUser.firstName} {selectedUser.lastName}</strong> ({selectedUser.email})
-            </p>
-            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', padding: '10px 14px', marginBottom: '20px' }}>
-              <p style={{ color: '#EF4444', fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: '600' }}>
-                ⚠️ This action is permanent. All user ads will also be deleted.
-              </p>
-            </div>
+            <h3 style={{ fontSize: '20px', fontWeight: '800', fontFamily: 'Inter, sans-serif', color: '#991B1B', marginBottom: '8px' }}>⛔ Permanently Suspend User</h3>
+<p style={{ color: '#64748B', fontFamily: 'Inter, sans-serif', fontSize: '14px', marginBottom: '12px' }}>
+  Suspending: <strong>{selectedUser.firstName} {selectedUser.lastName}</strong> ({selectedUser.email})
+</p>
+<div style={{ background: '#FEF2F2', border: '2px solid #FECACA', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px' }}>
+  <p style={{ color: '#991B1B', fontSize: '13px', fontFamily: 'Inter, sans-serif', fontWeight: '800', marginBottom: '6px' }}>
+    ⚠️ READ CAREFULLY BEFORE PROCEEDING
+  </p>
+  <p style={{ color: '#B91C1C', fontSize: '12px', fontFamily: 'Inter, sans-serif', lineHeight: '1.7' }}>
+    • This action is <strong>permanent and irreversible</strong><br/>
+    • User's email will be <strong>permanently banned</strong> from VEXO<br/>
+    • All their ads will be <strong>removed</strong><br/>
+    • They will <strong>never be able to register again</strong> with this email<br/>
+    • The reason you write will be <strong>shown to the user</strong>
+  </p>
+</div>
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#64748B', fontFamily: 'Inter, sans-serif', marginBottom: '6px' }}>
                 Reason for deletion *
