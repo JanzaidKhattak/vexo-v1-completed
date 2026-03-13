@@ -12,6 +12,8 @@ import ElectronicsForm from '../../../components/forms/ElectronicsForm'
 import FurnitureForm from '../../../components/forms/FurnitureForm'
 import FashionForm from '../../../components/forms/FashionForm'
 import OthersForm from '../../../components/forms/OthersForm'
+import PropertyForSellForm from '../../../components/forms/PropertyForSellForm'
+import PropertyForRentForm from '../../../components/forms/PropertyForRentForm'
 import { useSiteSettings } from '../../../context/SiteSettingsContext'
 import { Suspense } from 'react'
 
@@ -25,7 +27,9 @@ const FORM_MAP = {
   'furniture-home': FurnitureForm,
   fashion:      FashionForm,
   'fashion-beauty': FashionForm,
-  others:       OthersForm,
+  others:             OthersForm,
+  'property-for-sell': PropertyForSellForm,
+  'property-for-rent': PropertyForRentForm,
 }
 
 // Phone Number Modal
