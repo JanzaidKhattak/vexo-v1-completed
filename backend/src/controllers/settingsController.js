@@ -60,7 +60,24 @@ const updateSettings = async (req, res) => {
     if (!settings) {
       settings = await SiteSettings.create(updates);
     } else {
-      Object.assign(settings, updates);
+      // Simple fields
+      const simpleFields = [
+        'siteName','heroHeading','heroSubheading','heroButtonText',
+        'primaryColor','secondaryColor','fontFamily',
+        'whatsappNumber','facebookUrl','instagramUrl','youtubeUrl','twitterUrl',
+        'chatButtonEnabled','chatButtonNumber','supportEmail','supportWhatsapp',
+        'footerAddress','logoUrl','faviconUrl','heroBannerImage'
+      ];
+      simpleFields.forEach(field => {
+        if (updates[field] !== undefined) settings[field] = updates[field];
+      });
+
+      // Categories — markModified zaroori hai nested array ke liye
+      if (updates.categories) {
+        settings.categories = updates.categories;
+        settings.markModified('categories');
+      }
+
       await settings.save();
     }
 
