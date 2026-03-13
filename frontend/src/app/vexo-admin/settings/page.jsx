@@ -367,16 +367,13 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Upload any pending category icon files
-      const updatedCats = [...categories];
-      for (const [idxStr, file] of Object.entries(catIconUploads)) {
-        const idx = Number(idxStr);
-        const url = await uploadCatIcon(file);
-        if (url) updatedCats[idx] = { ...updatedCats[idx], iconUrl: url };
-      }
-      // Upload new category icon if present
-      let newCatIconUrl = "";
-      if (newCatFile) newCatIconUrl = await uploadCatIcon(newCatFile);
+      // Categories ko clean karo — blob URLs hata do, backend upload karega
+      const catsToSave = categories.map(c => {
+        const { _blobPreview, ...rest } = c;
+        // Agar blob URL hai toh empty karo — backend file se set karega
+        if (rest.iconUrl && rest.iconUrl.startsWith("blob:")) rest.iconUrl = "";
+        return rest;
+      });
 
       const formData = new FormData();
       formData.append("siteName", siteName);
@@ -396,22 +393,26 @@ export default function AdminSettingsPage() {
       formData.append("supportEmail", supportEmail);
       formData.append("supportWhatsapp", supportWhatsapp);
       formData.append("footerAddress", footerAddress);
-      formData.append("categories", JSON.stringify(updatedCats));
+      formData.append("categories", JSON.stringify(catsToSave));
 
+      // Standard files
       if (logoFile)       formData.append("logo",       logoFile);
       if (faviconFile)    formData.append("favicon",    faviconFile);
       if (heroBannerFile) formData.append("heroBanner", heroBannerFile);
 
-      await api.put("/settings", formData, {
+      // Category icon files — field name: catIcon_INDEX
+      Object.entries(catIconUploads).forEach(([idx, file]) => {
+        formData.append(`catIcon_${idx}`, file);
+      });
+
+      const res = await api.put("/settings", formData, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${getToken()}` }
       });
 
-      // Clean blob preview flags after successful save
-      const cleanedCats = updatedCats.map(c => {
-        const { _blobPreview, ...rest } = c;
-        return rest;
-      });
-      setCategories(cleanedCats);
+      // Backend se returned settings use karo — real Cloudinary URLs hongi
+      if (res.data.settings?.categories) {
+        setCategories(res.data.settings.categories);
+      }
       setCatIconUploads({});
       await refreshSettings();
       toast.success("Settings saved!");
