@@ -333,7 +333,7 @@ export default function AdminSettingsPage() {
       setPrimaryColor(s.primaryColor || "#6C3AF5");
       setSecondaryColor(s.secondaryColor || "#F59E0B");
       setFontFamily(s.fontFamily || "Inter");
-      setCategories((s.categories || []).map(c => ({ showOnHome: true, ...c })));
+      setCategories((s.categories || []).map(c => ({ ...c, showOnHome: c.showOnHome !== undefined ? c.showOnHome : true })));
       setWhatsappNumber(s.whatsappNumber || "");
       setFacebookUrl(s.facebookUrl || "");
       setInstagramUrl(s.instagramUrl || "");
@@ -358,8 +358,9 @@ export default function AdminSettingsPage() {
       });
       return res.data.url || res.data.imageUrl || "";
     } catch {
-      // Fallback: return object URL (won't persist after refresh but lets admin see it)
-      return URL.createObjectURL(file);
+      // Upload failed — return empty string, don't save blob URL
+      toast.error("Icon upload failed. Try again.");
+      return "";
     }
   };
 
@@ -405,7 +406,12 @@ export default function AdminSettingsPage() {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${getToken()}` }
       });
 
-      setCategories(updatedCats);
+      // Clean blob preview flags after successful save
+      const cleanedCats = updatedCats.map(c => {
+        const { _blobPreview, ...rest } = c;
+        return rest;
+      });
+      setCategories(cleanedCats);
       setCatIconUploads({});
       await refreshSettings();
       toast.success("Settings saved!");
@@ -428,9 +434,10 @@ export default function AdminSettingsPage() {
 
   const handleCatIconUpload = (idx, file) => {
     setCatIconUploads(prev => ({ ...prev, [idx]: file }));
-    const url = URL.createObjectURL(file);
+    // Show blob preview in UI only — actual Cloudinary URL set on Save
+    const blobUrl = URL.createObjectURL(file);
     const u = [...categories];
-    u[idx] = { ...u[idx], iconUrl: url };
+    u[idx] = { ...u[idx], iconUrl: blobUrl, _blobPreview: true };
     setCategories(u);
   };
 
@@ -442,18 +449,25 @@ export default function AdminSettingsPage() {
   const addCategory = () => {
     if (!newCatName || !newCatSlug) { toast.error("Name and slug required"); return; }
     const id = newCatSlug.toLowerCase().replace(/\s+/g, "-");
-    setCategories([...categories, {
-      id, name: newCatName, slug: id,
-      icon: newCatIcon || "📦",
-      iconUrl: newCatPreview || "",
-      iconSize: newCatSize,
-      isActive: true,
-      showOnHome: newCatShowOnHome,
-    }]);
+    const newIndex = categories.length;
+    setCategories(prev => {
+      const updated = [...prev, {
+        id, name: newCatName, slug: id,
+        icon: newCatIcon || "📦",
+        iconUrl: "",
+        iconSize: newCatSize,
+        isActive: true,
+        showOnHome: newCatShowOnHome,
+      }];
+      return updated;
+    });
+    if (newCatFile) {
+      setCatIconUploads(prev => ({ ...prev, [newIndex]: newCatFile }));
+    }
     setNewCatName(""); setNewCatSlug(""); setNewCatIcon("");
     setNewCatFile(null); setNewCatPreview(""); setNewCatSize(28);
     setNewCatShowOnHome(true);
-    toast.success("Category added!");
+    toast.success("Category added! Press Save All Settings to upload icon.");
   };
 
   const focusIn  = e => e.target.style.borderColor = "#6C3AF5";
