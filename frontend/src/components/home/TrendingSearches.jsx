@@ -12,42 +12,28 @@ export default function TrendingSearches() {
   const router = useRouter()
 
   return (
-    <section style={{ padding: '8px 0 40px' }}>
+    <section style={{ padding: '8px 0 32px' }}>
       <div className="page-container">
         <h2 style={{
-          fontSize: '22px',
-          fontWeight: '700',
-          color: 'var(--text-primary)',
-          fontFamily: 'Inter, sans-serif',
-          letterSpacing: '-0.02em',
-          marginBottom: '4px',
+          fontSize: '20px', fontWeight: '800', color: '#0f172a',
+          fontFamily: "'DM Sans', sans-serif",
+          letterSpacing: '-0.02em', marginBottom: '4px',
         }}>Trending Searches</h2>
         <p style={{
-          fontSize: '14px',
-          color: 'var(--text-muted)',
-          fontFamily: 'Inter, sans-serif',
-          marginBottom: '16px',
+          fontSize: '13px', color: '#94A3B8',
+          fontFamily: "'DM Sans', sans-serif", marginBottom: '14px',
         }}>What people are looking for in Attock</p>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {TRENDING.map((term) => (
-            <button
-              key={term}
-              onClick={() => router.push(`/search?q=${encodeURIComponent(term)}`)}
+          {TRENDING.map(term => (
+            <button key={term} onClick={() => router.push(`/search?q=${encodeURIComponent(term)}`)}
               style={{
-                padding: '7px 14px',
-                background: 'white',
+                padding: '7px 14px', background: 'white',
                 border: '1px solid var(--border-default)',
-                borderRadius: '20px',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: 'var(--text-secondary)',
-                fontFamily: 'Inter, sans-serif',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
+                borderRadius: '20px', fontSize: '13px', fontWeight: '500',
+                color: 'var(--text-secondary)', fontFamily: "'DM Sans', sans-serif",
+                cursor: 'pointer', transition: 'all 0.15s',
+                display: 'flex', alignItems: 'center', gap: '5px',
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.borderColor = 'var(--brand-primary)'

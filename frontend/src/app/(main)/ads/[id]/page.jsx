@@ -224,7 +224,7 @@ export default function AdDetailPage() {
             }}>← Back</button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px', alignItems: 'flex-start' }}>
+          <div className="ad-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px', alignItems: 'flex-start' }}>
 
             {/* ── LEFT ─────────────────────────────────────────────── */}
             <div style={{ animation: 'fadeUp 0.45s ease' }}>

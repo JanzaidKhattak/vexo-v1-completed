@@ -133,10 +133,10 @@ export default function CategoryPage() {
         </p>
       </div>
 
-      <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
+      <div className="filter-layout" style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
 
         {/* Sidebar */}
-        <div style={{ width: sidebarOpen ? '240px' : '0px', minWidth: sidebarOpen ? '240px' : '0px', overflow: 'hidden', transition: 'all 0.3s ease', flexShrink: 0 }}>
+        <div className="filter-sidebar" style={{ width: sidebarOpen ? '240px' : '0px', minWidth: sidebarOpen ? '240px' : '0px', overflow: 'hidden', transition: 'all 0.3s ease', flexShrink: 0 }}>
           <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', position: 'sticky', top: '20px' }}>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -195,7 +195,7 @@ export default function CategoryPage() {
         <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* Toolbar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
+          <div className="filter-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
             <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
               padding: '8px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600',
               fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
@@ -241,7 +241,7 @@ export default function CategoryPage() {
               )}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="ads-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
               {ads.map(ad => <AdCard key={ad._id} ad={ad} />)}
             </div>
           )}

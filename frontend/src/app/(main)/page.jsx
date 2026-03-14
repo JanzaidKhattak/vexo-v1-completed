@@ -16,6 +16,7 @@ function SectionHeader({ title, subtitle, href }) {
     <div style={{
       display: 'flex', alignItems: 'center',
       justifyContent: 'space-between', marginBottom: '20px',
+      flexWrap: 'wrap', gap: '10px',
     }}>
       <div>
         <h2 style={{
@@ -32,7 +33,7 @@ function SectionHeader({ title, subtitle, href }) {
           fontSize: '13px', fontWeight: '600',
           color: 'var(--brand-primary)', textDecoration: 'none',
           padding: '6px 14px', border: '1.5px solid var(--brand-primary)',
-          borderRadius: '8px', transition: 'all 0.15s',
+          borderRadius: '8px', transition: 'all 0.15s', whiteSpace: 'nowrap',
         }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-primary)'; e.currentTarget.style.color = 'white' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--brand-primary)' }}
@@ -70,8 +71,6 @@ export default function HomePage() {
   const getAdsByCategory = (categoryId) =>
     recentAds.filter(ad => ad.category === categoryId).slice(0, 4)
 
-  // Only show categories where BOTH isActive=true AND showOnHome=true (strict check)
-  // If settings not loaded yet → show nothing until loaded (avoid flash)
   const activeSections = (() => {
     if (!settings?.categories) return []
     return settings.categories
@@ -88,38 +87,33 @@ export default function HomePage() {
     <div>
       <HeroBanner />
 
-      <div className="page-container" style={{ paddingTop: '32px', paddingBottom: '48px' }}>
+      <div className="page-container" style={{ paddingTop: '24px', paddingBottom: '48px' }}>
 
         <AdBannerSlot type="leaderboard" />
 
-        <section style={{ marginTop: '36px' }}>
+        <section style={{ marginTop: '28px' }}>
           <CategoryGrid />
         </section>
 
-        <section style={{ marginTop: '36px' }}>
+        <section style={{ marginTop: '28px' }}>
           <TrendingSearches />
         </section>
 
-        {/* Trending Now */}
-        <section style={{ marginTop: '48px' }}>
-          <SectionHeader
-            title="Trending Now"
-            subtitle="Most viewed ads in Attock"
-          />
+        <section style={{ marginTop: '36px' }}>
+          <SectionHeader title="Trending Now" subtitle="Most viewed ads in Attock" />
           <TrendingAds ads={trendingAds} loading={loading} />
         </section>
 
-        <div style={{ marginTop: '40px' }}>
+        <div style={{ marginTop: '36px' }}>
           <AdBannerSlot type="banner" />
         </div>
 
-        {/* Dynamic Category Sections — strict showOnHome check */}
         {activeSections.map((s, i) => (
-          <section key={s.category} style={{ marginTop: '48px' }}>
+          <section key={s.category} style={{ marginTop: '40px' }}>
             <SectionHeader title={s.title} subtitle={s.subtitle} href={s.href} />
             <RecentAds ads={getAdsByCategory(s.category)} loading={loading} />
             {i === 2 && (
-              <div style={{ marginTop: '40px' }}>
+              <div style={{ marginTop: '36px' }}>
                 <AdBannerSlot type="leaderboard" />
               </div>
             )}

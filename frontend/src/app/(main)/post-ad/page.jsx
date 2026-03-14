@@ -340,7 +340,7 @@ function PostAdPageInner() {
           <h2 style={{ fontSize: '16px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px' }}>
             1. Select Category *
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
+          <div className="post-ad-category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
             {categoryList.map(cat => (
               <button
                 key={cat.id}
