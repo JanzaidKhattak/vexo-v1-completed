@@ -237,7 +237,7 @@ function CategoryRow({ cat, idx, onToggle, onRemove, onEdit, onIconUpload, onPro
       background: isDragging ? "#FAF5FF" : cat.isActive ? "white" : "#F8FAFC",
       overflow: "hidden", transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s",
       boxShadow: isDragging ? "0 8px 32px rgba(108,58,245,0.18)" : "none",
-      marginLeft: cat.parentId ? "28px" : "0",
+      marginLeft: cat._depth ? `${cat._depth * 28}px` : "0",
     }}>
       {/* Main row */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
@@ -807,19 +807,31 @@ export default function AdminSettingsPage() {
               style={{ display: "flex", flexDirection: "column", gap: "10px" }}
               onDragOver={e => e.preventDefault()}
             >
-              {categories.map((cat, idx) => (
-                <DraggableCategoryRow
-                  key={cat.id + idx}
-                  cat={cat} idx={idx}
-                  categories={categories}
-                  onReorder={handleCatReorder}
-                  onToggle={handleCatToggle}
-                  onRemove={handleRemoveCat}
-                  onEdit={handleCatEdit}
-                  onIconUpload={handleCatIconUpload}
-                  onPromote={handleCatPromote}
-                />
-              ))}
+              {(() => {
+                // Calculate depth for each category
+                const getDepth = (cat, cats, visited = new Set()) => {
+                  if (!cat.parentId || visited.has(cat.id)) return 0;
+                  visited.add(cat.id);
+                  const parent = cats.find(c => c.id === cat.parentId);
+                  return parent ? 1 + getDepth(parent, cats, visited) : 0;
+                };
+                return categories.map((cat, idx) => {
+                  const depth = getDepth(cat, categories);
+                  return (
+                    <DraggableCategoryRow
+                      key={cat.id + idx}
+                      cat={{ ...cat, _depth: depth }} idx={idx}
+                      categories={categories}
+                      onReorder={handleCatReorder}
+                      onToggle={handleCatToggle}
+                      onRemove={handleRemoveCat}
+                      onEdit={handleCatEdit}
+                      onIconUpload={handleCatIconUpload}
+                      onPromote={handleCatPromote}
+                    />
+                  );
+                });
+              })()}
             </div>
           </div>
 

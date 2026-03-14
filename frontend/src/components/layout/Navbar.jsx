@@ -219,10 +219,10 @@ function NavCategoryItem({ cat, allCats }) {
 
       {/* Dropdown panel */}
       <div className="nav-cat-dropdown" style={{
-        position: "absolute", top: "100%", left: "0",
+        position: "absolute", top: "calc(100% + 4px)", left: "0",
         minWidth: "210px", background: "white", borderRadius: "12px", padding: "6px",
         boxShadow: "0 20px 60px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.07)",
-        border: "1px solid #F1F5F9", zIndex: 9999,
+        border: "1px solid #F1F5F9", zIndex: 99999,
         opacity: 0, visibility: "hidden", transform: "translateY(-6px)",
         transition: "opacity 0.18s ease, transform 0.18s ease, visibility 0.18s",
         pointerEvents: "none",
@@ -313,6 +313,7 @@ export default function Navbar() {
         .nav-cat-link:hover { color: var(--brand-primary) !important; border-bottom-color: var(--brand-primary) !important; }
         .nav-cat-arrow { transition: transform 0.2s; }
         .nav-cat-parent:hover .nav-cat-arrow { transform: rotate(180deg); }
+        .nav-cat-parent { overflow: visible !important; }
         .nav-cat-parent:hover > .nav-cat-dropdown {
           opacity: 1 !important;
           visibility: visible !important;
@@ -320,12 +321,15 @@ export default function Navbar() {
           pointer-events: auto !important;
         }
         .nav-drop-item:hover { background: #F5F3FF !important; color: var(--brand-primary) !important; }
+        .nav-drop-item-wrap { overflow: visible !important; }
         .nav-drop-item-wrap:hover > .nav-flyout {
           opacity: 1 !important;
           visibility: visible !important;
           transform: translateX(0) !important;
           pointer-events: auto !important;
         }
+        /* Ensure no parent clips the dropdown */
+        header nav, header nav > *, header .page-container { overflow: visible !important; }
       `}</style>
       {/* Main Row */}
       <div className="page-container" style={{
@@ -478,9 +482,9 @@ export default function Navbar() {
       )}
 
       {/* Categories */}
-      <div style={{ borderTop: "1px solid var(--border-light)" }}>
-        <div className="page-container">
-          <nav style={{ display: "flex", gap: "0", overflowX: "auto", scrollbarWidth: "none" }}>
+      <div style={{ borderTop: "1px solid var(--border-light)", overflow: "visible" }}>
+        <div className="page-container" style={{ overflow: "visible" }}>
+          <nav style={{ display: "flex", gap: "0", overflowX: "visible", scrollbarWidth: "none", position: "relative" }}>
             {(() => {
               const allCats = settings?.categories?.filter(c => c.isActive) || CATEGORIES;
               // Top-level = no parentId OR parentId is empty string or null
