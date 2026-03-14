@@ -183,6 +183,108 @@ function UserDropdown({ user, onLogout }) {
   );
 }
 
+// ── Navbar Category Item with optional dropdown ───────────────────────────────
+function NavCategoryItem({ cat, children, hasChildren }) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef(null);
+
+  const showDropdown = () => {
+    clearTimeout(timerRef.current);
+    setOpen(true);
+  };
+  const hideDropdown = () => {
+    timerRef.current = setTimeout(() => setOpen(false), 120);
+  };
+
+  const linkStyle = {
+    display: "flex", alignItems: "center", gap: "4px",
+    padding: "12px 16px", fontSize: "13px", fontWeight: "500",
+    color: "var(--text-secondary)", textDecoration: "none",
+    fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap",
+    borderBottom: "2px solid transparent", transition: "all 0.15s",
+    position: "relative", cursor: "pointer",
+  };
+
+  if (!hasChildren) {
+    return (
+      <Link
+        href={`/category/${cat.id}`}
+        style={linkStyle}
+        onMouseEnter={e => { e.currentTarget.style.color = "var(--brand-primary)"; e.currentTarget.style.borderBottomColor = "var(--brand-primary)"; }}
+        onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderBottomColor = "transparent"; }}
+      >
+        {cat.name}
+      </Link>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative" }} onMouseEnter={showDropdown} onMouseLeave={hideDropdown}>
+      <style>{`
+        @keyframes dropIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .nav-cat-dropdown a:hover {
+          background: #F5F3FF !important;
+          color: var(--brand-primary) !important;
+        }
+      `}</style>
+
+      {/* Parent link with arrow */}
+      <Link
+        href={`/category/${cat.id}`}
+        style={{ ...linkStyle, color: open ? "var(--brand-primary)" : "var(--text-secondary)", borderBottomColor: open ? "var(--brand-primary)" : "transparent" }}
+      >
+        {cat.name}
+        <svg
+          width="12" height="12" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
+        >
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </Link>
+
+      {/* Dropdown */}
+      {open && (
+        <div
+          className="nav-cat-dropdown"
+          style={{
+            position: "absolute", top: "100%", left: "0",
+            minWidth: "200px", background: "white",
+            borderRadius: "12px", padding: "6px",
+            boxShadow: "0 16px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)",
+            border: "1px solid #F1F5F9", zIndex: 200,
+            animation: "dropIn 0.18s ease",
+          }}
+        >
+          {children.map(child => (
+            <Link
+              key={child.id}
+              href={`/category/${child.id}`}
+              style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "9px 12px", borderRadius: "8px",
+                textDecoration: "none", fontSize: "13px", fontWeight: "500",
+                color: "#374151", fontFamily: "'DM Sans', sans-serif",
+                transition: "all 0.12s",
+              }}
+            >
+              {child.iconUrl ? (
+                <img src={child.iconUrl} alt="" style={{ width: "18px", height: "18px", objectFit: "contain", flexShrink: 0 }} />
+              ) : child.icon ? (
+                <span style={{ fontSize: "16px", lineHeight: 1 }}>{child.icon}</span>
+              ) : null}
+              {child.name}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Navbar() {
   const router = useRouter();
   const { settings } = useSiteSettings();
@@ -215,7 +317,7 @@ export default function Navbar() {
           alignItems: "center", gap: "8px", flexShrink: 0,
         }}>
           {settings?.logoUrl ? (
-            <img src={settings.logoUrl} alt="logo" style={{ height: "50px", width: "auto", borderRadius: "6px" }} />
+            <img src={settings.logoUrl} alt="logo" style={{ height: "32px", width: "auto", borderRadius: "6px" }} />
           ) : (
             <div style={{
               width: "32px", height: "32px", background: "var(--brand-primary)",
@@ -358,29 +460,22 @@ export default function Navbar() {
       <div style={{ borderTop: "1px solid var(--border-light)" }}>
         <div className="page-container">
           <nav style={{ display: "flex", gap: "0", overflowX: "auto", scrollbarWidth: "none" }}>
-            {(settings?.categories?.filter(c => c.isActive) || CATEGORIES).map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/category/${cat.id}`}
-                style={{
-                  display: "flex", alignItems: "center",
-                  padding: "12px 16px", fontSize: "13px", fontWeight: "500",
-                  color: "var(--text-secondary)", textDecoration: "none",
-                  fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap",
-                  borderBottom: "2px solid transparent", transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "var(--brand-primary)";
-                  e.currentTarget.style.borderBottomColor = "var(--brand-primary)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "var(--text-secondary)";
-                  e.currentTarget.style.borderBottomColor = "transparent";
-                }}
-              >
-                {cat.name}
-              </Link>
-            ))}
+            {(() => {
+              const allCats = settings?.categories?.filter(c => c.isActive) || CATEGORIES;
+              const parents = allCats.filter(c => !c.parentId);
+              return parents.map((cat) => {
+                const children = allCats.filter(c => c.parentId === cat.id);
+                const hasChildren = children.length > 0;
+                return (
+                  <NavCategoryItem
+                    key={cat.id}
+                    cat={cat}
+                    children={children}
+                    hasChildren={hasChildren}
+                  />
+                );
+              });
+            })()}
           </nav>
         </div>
       </div>

@@ -110,8 +110,88 @@ function Toggle({ value, onChange }) {
   );
 }
 
+// ── Draggable wrapper for CategoryRow ────────────────────────────────────────
+function DraggableCategoryRow({ cat, idx, categories, onReorder, onToggle, onRemove, onEdit, onIconUpload }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dropPosition, setDropPosition] = useState("center"); // "top" | "center" | "child"
+  const rowRef = useRef(null);
+
+  const handleDragStart = (e) => {
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(idx));
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setIsDragOver(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+    // Detect if mouse is on right side → make child
+    const rect = rowRef.current?.getBoundingClientRect();
+    if (rect) {
+      const relX = e.clientX - rect.left;
+      if (relX > rect.width * 0.55) {
+        setDropPosition("child");
+      } else {
+        const relY = e.clientY - rect.top;
+        setDropPosition(relY < rect.height / 2 ? "top" : "center");
+      }
+    }
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+    setDropPosition("center");
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
+    if (fromIdx === idx) return;
+    onReorder(fromIdx, idx, dropPosition, cat.id);
+    setDropPosition("center");
+  };
+
+  return (
+    <div
+      ref={rowRef}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{
+        opacity: isDragging ? 0.4 : 1,
+        transition: "opacity 0.15s",
+        borderTop: isDragOver && dropPosition === "top" ? "3px solid #6C3AF5" : "3px solid transparent",
+        borderBottom: isDragOver && dropPosition === "center" ? "3px solid #6C3AF5" : "3px solid transparent",
+        borderRight: isDragOver && dropPosition === "child" ? "4px solid #6C3AF5" : "4px solid transparent",
+        borderRadius: "14px",
+      }}
+    >
+      <CategoryRow
+        cat={cat} idx={idx}
+        isDragging={isDragging}
+        dragHandleProps={{}} // already draggable via parent div
+        onToggle={onToggle}
+        onRemove={onRemove}
+        onEdit={onEdit}
+        onIconUpload={onIconUpload}
+      />
+    </div>
+  );
+}
+
 // ── Category Row ──────────────────────────────────────────────────────────────
-function CategoryRow({ cat, idx, onToggle, onRemove, onEdit, onIconUpload }) {
+function CategoryRow({ cat, idx, onToggle, onRemove, onEdit, onIconUpload, dragHandleProps, isDragging }) {
   const [editing, setEditing]     = useState(false);
   const [editName, setEditName]   = useState(cat.name);
   const [editSlug, setEditSlug]   = useState(cat.slug || cat.id);
@@ -125,12 +205,32 @@ function CategoryRow({ cat, idx, onToggle, onRemove, onEdit, onIconUpload }) {
 
   return (
     <div style={{
-      border: "1.5px solid #E2E8F0", borderRadius: "12px",
-      background: cat.isActive ? "white" : "#F8FAFC",
-      overflow: "hidden", transition: "all 0.15s",
+      border: `1.5px solid ${isDragging ? "#6C3AF5" : "#E2E8F0"}`,
+      borderRadius: "12px",
+      background: isDragging ? "#FAF5FF" : cat.isActive ? "white" : "#F8FAFC",
+      overflow: "hidden", transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s",
+      boxShadow: isDragging ? "0 8px 32px rgba(108,58,245,0.18)" : "none",
+      marginLeft: cat.parentId ? "28px" : "0",
     }}>
       {/* Main row */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px" }}>
+
+        {/* Drag handle — 4 dots */}
+        <div {...dragHandleProps} style={{ flexShrink: 0, cursor: "grab", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", color: "#CBD5E1", transition: "color 0.15s" }}
+          onMouseEnter={e => e.currentTarget.style.color = "#6C3AF5"}
+          onMouseLeave={e => e.currentTarget.style.color = "#CBD5E1"}
+          title="Drag to reorder"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+            <circle cx="3.5" cy="3.5" r="1.5"/><circle cx="10.5" cy="3.5" r="1.5"/>
+            <circle cx="3.5" cy="10.5" r="1.5"/><circle cx="10.5" cy="10.5" r="1.5"/>
+          </svg>
+        </div>
+
+        {/* Sub-category indent indicator */}
+        {cat.parentId && (
+          <div style={{ width: "12px", height: "12px", borderLeft: "2px solid #C4B5FD", borderBottom: "2px solid #C4B5FD", borderRadius: "0 0 0 4px", flexShrink: 0, marginLeft: "-8px" }} />
+        )}
 
         {/* Icon preview + upload */}
         <div style={{ position: "relative", flexShrink: 0 }}>
@@ -447,6 +547,25 @@ export default function AdminSettingsPage() {
     setCategories(categories.filter((_, i) => i !== idx));
   };
 
+  const handleCatReorder = (fromIdx, toIdx, dropPosition, targetId) => {
+    const updated = [...categories];
+    const [moved] = updated.splice(fromIdx, 1);
+
+    if (dropPosition === "child") {
+      // Make it a sub-category of the target
+      moved.parentId = targetId;
+      // Insert right after target
+      const targetNewIdx = updated.findIndex(c => c.id === targetId);
+      updated.splice(targetNewIdx + 1, 0, moved);
+    } else {
+      // Remove parentId — it becomes a top-level category
+      delete moved.parentId;
+      const adjustedTo = fromIdx < toIdx ? toIdx - 1 : toIdx;
+      updated.splice(adjustedTo, 0, moved);
+    }
+    setCategories(updated);
+  };
+
   const addCategory = () => {
     if (!newCatName || !newCatSlug) { toast.error("Name and slug required"); return; }
     const id = newCatSlug.toLowerCase().replace(/\s+/g, "-");
@@ -603,15 +722,33 @@ export default function AdminSettingsPage() {
             {/* Info */}
             <div style={{ padding: "12px 16px", background: "#EDE9FE", borderRadius: "10px", marginBottom: "18px" }}>
               <p style={{ fontSize: "12px", color: "#5B21B6", fontFamily: "'DM Sans', sans-serif", fontWeight: "500", lineHeight: "1.6" }}>
-                Homepage toggle controls whether a category section appears on the home page (max 4 products shown).
-                Active toggle controls visibility in the navbar category bar.
-                Click Edit on any category to rename, change slug, upload a custom icon, or adjust icon size.
+                Drag rows to reorder — order reflects in navbar, homepage and post-ad.
+                Drop a category slightly to the right of another to make it a sub-category (shows as dropdown in navbar).
+                Homepage toggle: show section on home page. Active toggle: show in navbar.
               </p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {/* DnD hint */}
+            <div style={{ padding: "10px 14px", background: "#F8FAFC", borderRadius: "10px", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="#94A3B8">
+                <circle cx="3.5" cy="3.5" r="1.5"/><circle cx="10.5" cy="3.5" r="1.5"/>
+                <circle cx="3.5" cy="10.5" r="1.5"/><circle cx="10.5" cy="10.5" r="1.5"/>
+              </svg>
+              <p style={{ fontSize: "12px", color: "#94A3B8", fontFamily: "'DM Sans', sans-serif" }}>
+                Drag rows to reorder. Drop slightly right of a parent to make it a sub-category (shows as dropdown in navbar).
+              </p>
+            </div>
+
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+              onDragOver={e => e.preventDefault()}
+            >
               {categories.map((cat, idx) => (
-                <CategoryRow key={cat.id + idx} cat={cat} idx={idx}
+                <DraggableCategoryRow
+                  key={cat.id + idx}
+                  cat={cat} idx={idx}
+                  categories={categories}
+                  onReorder={handleCatReorder}
                   onToggle={handleCatToggle}
                   onRemove={handleRemoveCat}
                   onEdit={handleCatEdit}
