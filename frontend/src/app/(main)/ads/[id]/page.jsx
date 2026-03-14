@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import api from '../../../../lib/axios'
 import { useAuth } from '../../../../context/AuthContext'
 import { formatPrice } from '../../../../utils/formatPrice'
@@ -198,10 +199,30 @@ export default function AdDetailPage() {
       <div className="page-container" style={{ padding: '24px 20px 64px' }}>
         <div style={{ maxWidth: '1060px', margin: '0 auto' }}>
 
-          {/* Back */}
-          <button onClick={() => router.back()} className="back-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", marginBottom: '20px', padding: '6px 12px', borderRadius: '8px', transition: 'all 0.15s' }}>
-            ← Back
-          </button>
+          {/* Breadcrumb */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <Link href="/" style={{ fontSize: '13px', fontWeight: '500', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#6C3AF5'}
+              onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
+            >Home</Link>
+            {ad?.category && (<>
+              <span style={{ color: '#CBD5E1', fontSize: '13px' }}>/</span>
+              <Link href={`/category/${ad.category}`} style={{ fontSize: '13px', fontWeight: '500', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', transition: 'color 0.15s', textTransform: 'capitalize' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#6C3AF5'}
+                onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
+              >{ad.category.replace(/-/g, ' ')}</Link>
+            </>)}
+            <span style={{ color: '#CBD5E1', fontSize: '13px' }}>/</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif",
+              maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+            }}>{ad?.title}</span>
+            <button onClick={() => router.back()} className="back-btn" style={{
+              marginLeft: '8px', background: 'none', border: '1px solid #E2E8F0',
+              cursor: 'pointer', color: '#94A3B8', fontSize: '12px', fontWeight: '600',
+              fontFamily: "'DM Sans', sans-serif", padding: '4px 10px', borderRadius: '6px',
+              transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '4px'
+            }}>← Back</button>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px', alignItems: 'flex-start' }}>
 

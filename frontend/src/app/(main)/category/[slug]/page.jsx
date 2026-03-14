@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import api from '../../../../lib/axios'
 import AdCard from '../../../../components/ads/AdCard'
 import { useSiteSettings } from '../../../../context/SiteSettingsContext'
@@ -113,8 +114,17 @@ export default function CategoryPage() {
     <div className="page-container" style={{ padding: '32px 20px' }}>
       <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
 
-      {/* Header */}
+      {/* Breadcrumb + Header */}
       <div style={{ marginBottom: '24px' }}>
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ fontSize: '13px', fontWeight: '500', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', transition: 'color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#6C3AF5'}
+            onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
+          >Home</Link>
+          <span style={{ color: '#CBD5E1', fontSize: '13px' }}>/</span>
+          <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif" }}>{categoryName}</span>
+        </div>
         <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em', marginBottom: '4px' }}>
           {categoryName}
         </h1>
