@@ -23,7 +23,7 @@ export default function TrendingSearches() {
         <p style={{
           fontSize: '13px', color: '#94A3B8',
           fontFamily: "'DM Sans', sans-serif", marginBottom: '14px',
-        }}>What people are looking for in Attock</p>
+        }}>What people are looking for in Pakistan</p>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           {TRENDING.map(term => (

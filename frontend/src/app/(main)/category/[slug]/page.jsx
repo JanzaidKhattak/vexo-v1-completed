@@ -6,6 +6,7 @@ import Link from 'next/link'
 import api from '../../../../lib/axios'
 import AdCard from '../../../../components/ads/AdCard'
 import { useSiteSettings } from '../../../../context/SiteSettingsContext'
+import { PAKISTAN_LOCATIONS } from '../../../../constants/pakistanLocations'
 import { useLocation } from '../../../../context/LocationContext'
 
 const CATEGORY_FILTERS = {
@@ -72,6 +73,7 @@ export default function CategoryPage() {
   const [filters,     setFilters]     = useState({})
   const [minPrice,    setMinPrice]    = useState('')
   const [maxPrice,    setMaxPrice]    = useState('')
+  const [cityFilter,  setCityFilter]  = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const categoryName = (() => {
@@ -87,7 +89,8 @@ export default function CategoryPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ category: slug, page, limit: LIMIT, sortBy })
-      if (!location?.isDefault && location?.city) params.append('city', location.city)
+      const activeCity = cityFilter || (!location?.isDefault ? location?.city : null)
+      if (activeCity) params.append('city', activeCity)
       if (minPrice) params.append('minPrice', minPrice)
       if (maxPrice) params.append('maxPrice', maxPrice)
       Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, v) })
@@ -99,7 +102,7 @@ export default function CategoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [slug, page, sortBy, filters, minPrice, maxPrice, location])
+  }, [slug, page, sortBy, filters, minPrice, maxPrice, location, cityFilter])
 
   useEffect(() => { fetchAds() }, [fetchAds])
 
@@ -108,10 +111,10 @@ export default function CategoryPage() {
     setPage(1)
   }
 
-  const clearFilters = () => { setFilters({}); setMinPrice(''); setMaxPrice(''); setPage(1) }
+  const clearFilters = () => { setFilters({}); setMinPrice(''); setMaxPrice(''); setCityFilter(''); setPage(1) }
 
-  const hasActiveFilters = Object.values(filters).some(Boolean) || minPrice || maxPrice
-  const activeCount = Object.values(filters).filter(Boolean).length + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0)
+  const hasActiveFilters = Object.values(filters).some(Boolean) || minPrice || maxPrice || cityFilter
+  const activeCount = Object.values(filters).filter(Boolean).length + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (cityFilter ? 1 : 0)
 
   return (
     <div className="page-container" style={{ padding: '32px 20px' }}>
@@ -154,16 +157,37 @@ export default function CategoryPage() {
             {/* Price */}
             <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>Price Range (Rs)</p>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '6px' }}>
                 {[['Min', minPrice, setMinPrice], ['Max', maxPrice, setMaxPrice]].map(([label, val, setter]) => (
                   <input key={label} type="number" placeholder={label} value={val}
                     onChange={e => setter(e.target.value)}
                     onBlur={() => setPage(1)}
-                    style={{ flex: 1, padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+                    style={{ flex: 1, minWidth: 0, width: '100%', padding: '8px 8px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '12px', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
                     onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
                   />
                 ))}
               </div>
+            </div>
+
+            {/* Location filter */}
+            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+              <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>City</p>
+              <select
+                value={cityFilter}
+                onChange={e => { setCityFilter(e.target.value); setPage(1) }}
+                style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", outline: 'none', background: 'white' }}
+                onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
+                onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+              >
+                <option value="">All Pakistan</option>
+                {PAKISTAN_LOCATIONS.map(p => (
+                  <optgroup key={p.province} label={p.province}>
+                    {p.cities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
             </div>
 
             {/* Dynamic filters */}

@@ -220,7 +220,10 @@ const deleteAd = async (req, res) => {
 
 const getTrendingAds = async (req, res) => {
   try {
-    const ads = await Ad.find({ status: 'active', isDeletedByUser: false })
+    const { city } = req.query
+    const query = { status: 'active', isDeletedByUser: false }
+    if (city) query.area = { $regex: new RegExp(city, 'i') }
+    const ads = await Ad.find(query)
       .populate('seller', 'name phone avatar')
       .sort({ views: -1 })
       .limit(10)
@@ -232,8 +235,10 @@ const getTrendingAds = async (req, res) => {
 
 const getRecentAds = async (req, res) => {
   try {
-    const { limit = 20 } = req.query
-    const ads = await Ad.find({ status: 'active', isDeletedByUser: false })
+    const { limit = 20, city } = req.query
+    const query = { status: 'active', isDeletedByUser: false }
+    if (city) query.area = { $regex: new RegExp(city, 'i') }
+    const ads = await Ad.find(query)
       .populate('seller', 'name phone avatar')
       .sort({ createdAt: -1 })
       .limit(Number(limit))

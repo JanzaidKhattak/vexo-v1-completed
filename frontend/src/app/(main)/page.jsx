@@ -57,12 +57,12 @@ export default function HomePage() {
 
   const fetchAds = async () => {
     try {
-      const cityParam = (!location?.isDefault && location?.city)
-        ? `&city=${encodeURIComponent(location.city)}`
+      const cityQ = (!location?.isDefault && location?.city)
+        ? `city=${encodeURIComponent(location.city)}`
         : ''
       const [trendingRes, recentRes] = await Promise.all([
-        api.get(`/ads/trending?${cityParam}`),
-        api.get(`/ads/recent?limit=50${cityParam}`),
+        api.get(`/ads/trending${cityQ ? '?' + cityQ : ''}`),
+        api.get(`/ads/recent?limit=50${cityQ ? '&' + cityQ : ''}`),
       ])
       setTrendingAds(trendingRes.data.ads)
       setRecentAds(recentRes.data.ads)
@@ -83,7 +83,7 @@ export default function HomePage() {
       .map(cat => ({
         category: cat.id,
         title: cat.name,
-        subtitle: `Latest ${cat.name} listings in Attock`,
+        subtitle: `Latest ${cat.name} listings`,
         href: `/category/${cat.id}`,
       }))
   })()
@@ -105,7 +105,7 @@ export default function HomePage() {
         </section>
 
         <section style={{ marginTop: '36px' }}>
-          <SectionHeader title="Trending Now" subtitle="Most viewed ads in Attock" />
+          <SectionHeader title="Trending Now" subtitle="Most viewed ads in Pakistan" />
           <TrendingAds ads={trendingAds} loading={loading} />
         </section>
 

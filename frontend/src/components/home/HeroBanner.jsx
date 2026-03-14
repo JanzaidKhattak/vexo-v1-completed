@@ -12,7 +12,7 @@ export default function HeroBanner() {
   const { settings } = useSiteSettings()
   const { location, detecting } = useLocation()
 
-  const heading    = settings?.heroHeading    || 'Buy & Sell Anything in Attock'
+  const heading    = settings?.heroHeading    || 'Buy & Sell Anything in Pakistan'
   const subheading = settings?.heroSubheading || "Pakistan's growing local marketplace. Post your ad for free."
   const buttonText = settings?.heroButtonText || 'Search'
   const bannerImage = settings?.heroBannerImage || ''
@@ -156,7 +156,7 @@ export default function HeroBanner() {
             { value: '500+',   label: 'Active Ads' },
             { value: '1,200+', label: 'Happy Users' },
             { value: `${categories.length}`, label: 'Categories' },
-            { value: 'Attock', label: 'Only' },
+            { value: '100+', label: 'Cities' },
           ].map(stat => (
             <div key={stat.label} style={{ textAlign: 'center' }}>
               <div className="hero-stat-val" style={{ fontWeight: '800', color: 'white', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em' }}>{stat.value}</div>
