@@ -108,9 +108,23 @@ export default function AdDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [imgLoaded, setImgLoaded] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [lightbox, setLightbox] = useState(false)
+  const [lightboxIdx, setLightboxIdx] = useState(0)
   const relatedRef = useRef(null)
 
   useEffect(() => { fetchAd() }, [id])
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    if (!lightbox) return
+    const handler = (e) => {
+      if (e.key === 'Escape')      setLightbox(false)
+      if (e.key === 'ArrowRight')  setLightboxIdx(i => (i + 1) % (ad?.images?.length || 1))
+      if (e.key === 'ArrowLeft')   setLightboxIdx(i => (i - 1 + (ad?.images?.length || 1)) % (ad?.images?.length || 1))
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [lightbox, ad])
 
   const fetchAd = async () => {
     try {
@@ -223,7 +237,92 @@ export default function AdDetailPage() {
                     </svg>
                   </button>
                 ))}
+                {/* Enlarge button — bottom right */}
+                {ad.images?.length > 0 && (
+                  <button onClick={() => { setLightboxIdx(selectedImage); setLightbox(true) }}
+                    title="View fullscreen"
+                    style={{ position: 'absolute', bottom: '14px', right: '14px', width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3, transition: 'background 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(108,58,245,0.85)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.55)'}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                  </button>
+                )}
               </div>
+
+              {/* ── Lightbox ──────────────────────────────────────────────── */}
+              {lightbox && (
+                <div
+                  onClick={() => setLightbox(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'lbIn 0.22s ease' }}
+                >
+                  <style>{`
+                    @keyframes lbIn  { from { opacity:0; }            to { opacity:1; } }
+                    @keyframes lbImg { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
+                  `}</style>
+
+                  {/* Close button */}
+                  <button onClick={() => setLightbox(false)}
+                    style={{ position: 'absolute', top: '20px', right: '20px', width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, transition: 'background 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.22)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+
+                  {/* Counter */}
+                  {ad.images.length > 1 && (
+                    <div style={{ position: 'absolute', top: '22px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(6px)', color: 'white', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", padding: '6px 16px', borderRadius: '20px' }}>
+                      {lightboxIdx + 1} / {ad.images.length}
+                    </div>
+                  )}
+
+                  {/* Main image */}
+                  <img
+                    key={lightboxIdx}
+                    src={ad.images[lightboxIdx]}
+                    alt={ad.title}
+                    onClick={e => e.stopPropagation()}
+                    style={{ maxWidth: '90vw', maxHeight: '88vh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 32px 80px rgba(0,0,0,0.6)', animation: 'lbImg 0.2s ease', userSelect: 'none' }}
+                  />
+
+                  {/* Prev / Next arrows */}
+                  {ad.images.length > 1 && (
+                    <>
+                      <button
+                        onClick={e => { e.stopPropagation(); setLightboxIdx(i => (i - 1 + ad.images.length) % ad.images.length) }}
+                        style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(108,58,245,0.7)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); setLightboxIdx(i => (i + 1) % ad.images.length) }}
+                        style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(108,58,245,0.7)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    </>
+                  )}
+
+                  {/* Thumbnail strip */}
+                  {ad.images.length > 1 && (
+                    <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: '16px' }}>
+                      {ad.images.map((img, i) => (
+                        <div key={i} onClick={() => setLightboxIdx(i)} style={{ width: '52px', height: '52px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', border: `2.5px solid ${lightboxIdx === i ? '#6C3AF5' : 'rgba(255,255,255,0.25)'}`, transition: 'all 0.15s', opacity: lightboxIdx === i ? 1 : 0.6, transform: lightboxIdx === i ? 'scale(1.08)' : 'scale(1)' }}>
+                          <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Thumbnails */}
               {ad.images?.length > 1 && (
