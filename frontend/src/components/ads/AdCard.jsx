@@ -32,7 +32,7 @@ export default function AdCard({ ad }) {
       }}
     >
       {/* Image */}
-      <div style={{ position: 'relative', paddingTop: '68%', background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', paddingTop: '68%', background: '#F8FAFC', overflow: 'hidden' }}>
         {ad.images?.[0] || ad.image ? (
           <img
             src={ad.images?.[0] || ad.image}
@@ -40,7 +40,8 @@ export default function AdCard({ ad }) {
             style={{
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',
-              objectFit: 'cover', transition: 'transform 0.3s ease',
+              objectFit: 'contain',
+              transition: 'transform 0.3s ease',
             }}
           />
         ) : (

@@ -230,9 +230,29 @@ function PostAdPageInner() {
   }
 
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files).slice(0, 5)
-    setImages(files)
-    setPreviews(files.map(f => URL.createObjectURL(f)))
+    const newFiles = Array.from(e.target.files)
+    const combined = [...images, ...newFiles].slice(0, 5)
+    setImages(combined)
+    setPreviews(combined.map(f => URL.createObjectURL(f)))
+  }
+
+  const handleRemoveImage = (idx) => {
+    const newImages = images.filter((_, i) => i !== idx)
+    const newPreviews = previews.filter((_, i) => i !== idx)
+    setImages(newImages)
+    setPreviews(newPreviews)
+  }
+
+  const handleSetMainImage = (idx) => {
+    // Move selected image to index 0
+    const newImages = [...images]
+    const newPreviews = [...previews]
+    const [imgItem] = newImages.splice(idx, 1)
+    const [prevItem] = newPreviews.splice(idx, 1)
+    newImages.unshift(imgItem)
+    newPreviews.unshift(prevItem)
+    setImages(newImages)
+    setPreviews(newPreviews)
   }
 
   const handleSubmit = async () => {
@@ -416,9 +436,22 @@ function PostAdPageInner() {
 
         {/* 4 — Photos */}
         <div style={cardStyle}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px' }}>
-            4. Photos (Max 5)
-          </h2>
+          <style>{`
+            .img-thumb:hover .img-remove { opacity: 1 !important; }
+            .img-thumb:hover .img-main-btn { opacity: 1 !important; }
+          `}</style>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif" }}>
+              4. Photos ({previews.length}/5)
+            </h2>
+            {previews.length > 0 && (
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>
+                First image = main photo
+              </span>
+            )}
+          </div>
+
+          {/* Existing images in edit mode */}
           {isEditMode && existingImages.length > 0 && previews.length === 0 && (
             <div style={{ marginBottom: '16px' }}>
               <p style={{ fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px', color: 'var(--text-secondary)' }}>
@@ -431,31 +464,103 @@ function PostAdPageInner() {
               </div>
             </div>
           )}
-          <label style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', padding: '32px',
-            border: '2px dashed var(--border-default)', borderRadius: '12px',
-            cursor: 'pointer', background: 'var(--bg-secondary)',
-            transition: 'border-color 0.15s',
-          }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-          >
-            <span style={{ fontSize: '32px', marginBottom: '8px' }}>📷</span>
-            <span style={{ fontSize: '14px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", color: 'var(--text-secondary)' }}>
-              {isEditMode ? 'Upload new photos (replaces current)' : 'Click to upload photos'}
-            </span>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", marginTop: '4px' }}>
-              JPG, PNG up to 5MB each
-            </span>
-            <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: 'none' }} />
-          </label>
+
+          {/* Image previews with remove + main */}
           {previews.length > 0 && (
-            <div style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
               {previews.map((p, i) => (
-                <img key={i} src={p} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-default)' }} />
+                <div key={i} className="img-thumb" style={{ position: 'relative', width: '90px', height: '90px', flexShrink: 0 }}>
+                  <img src={p} alt="" style={{
+                    width: '100%', height: '100%',
+                    objectFit: 'cover', borderRadius: '10px',
+                    border: i === 0 ? '2.5px solid var(--brand-primary)' : '1.5px solid var(--border-default)',
+                  }} />
+
+                  {/* Main badge */}
+                  {i === 0 && (
+                    <div style={{
+                      position: 'absolute', bottom: '4px', left: '4px',
+                      background: 'var(--brand-primary)', color: 'white',
+                      fontSize: '9px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
+                      padding: '2px 5px', borderRadius: '4px',
+                    }}>MAIN</div>
+                  )}
+
+                  {/* Remove button */}
+                  <button
+                    className="img-remove"
+                    onClick={() => handleRemoveImage(i)}
+                    style={{
+                      position: 'absolute', top: '-6px', right: '-6px',
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      background: '#EF4444', color: 'white', border: '2px solid white',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', fontSize: '11px', fontWeight: '800',
+                      opacity: 0, transition: 'opacity 0.15s', zIndex: 2,
+                      lineHeight: 1, padding: 0,
+                    }}
+                  >✕</button>
+
+                  {/* Set as main button (not for index 0) */}
+                  {i !== 0 && (
+                    <button
+                      className="img-main-btn"
+                      onClick={() => handleSetMainImage(i)}
+                      title="Set as main photo"
+                      style={{
+                        position: 'absolute', bottom: '4px', left: '4px',
+                        background: 'rgba(0,0,0,0.65)', color: 'white',
+                        fontSize: '9px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
+                        padding: '2px 5px', borderRadius: '4px',
+                        border: 'none', cursor: 'pointer',
+                        opacity: 0, transition: 'opacity 0.15s', zIndex: 2,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >Set Main</button>
+                  )}
+                </div>
               ))}
+
+              {/* Add more button if less than 5 */}
+              {previews.length < 5 && (
+                <label style={{
+                  width: '90px', height: '90px', flexShrink: 0,
+                  border: '2px dashed var(--border-default)', borderRadius: '10px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  justifyContent: 'center', cursor: 'pointer',
+                  background: 'var(--bg-secondary)', transition: 'border-color 0.15s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+                >
+                  <span style={{ fontSize: '22px' }}>+</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>Add</span>
+                  <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: 'none' }} />
+                </label>
+              )}
             </div>
+          )}
+
+          {/* Main upload zone — only show if no previews */}
+          {previews.length === 0 && (
+            <label style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', padding: '32px',
+              border: '2px dashed var(--border-default)', borderRadius: '12px',
+              cursor: 'pointer', background: 'var(--bg-secondary)', transition: 'border-color 0.15s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+            >
+              <span style={{ fontSize: '32px', marginBottom: '8px' }}>📷</span>
+              <span style={{ fontSize: '14px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", color: 'var(--text-secondary)' }}>
+                {isEditMode ? 'Upload new photos (replaces current)' : 'Click to upload photos'}
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", marginTop: '4px' }}>
+                JPG, PNG up to 5MB each — Max 5 photos
+              </span>
+              <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: 'none' }} />
+            </label>
           )}
         </div>
 
