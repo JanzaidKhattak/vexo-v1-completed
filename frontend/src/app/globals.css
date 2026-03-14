@@ -467,3 +467,104 @@ a {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ── Safety grid (Ad Detail) ─────────────────────────────────────── */
+.safety-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .safety-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Admin users table ────────────────────────────────────────────── */
+.admin-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-table-wrap table {
+  min-width: 700px;
+}
+
+/* ── Admin layout — mobile sidebar ───────────────────────────────── */
+@media (max-width: 768px) {
+  /* Admin sidebar hidden by default, toggle via JS if needed */
+  .admin-sidebar-fixed {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .admin-sidebar-fixed.open {
+    transform: translateX(0);
+  }
+  .admin-main-content {
+    margin-left: 0 !important;
+  }
+  
+  /* Reports stats grid */
+  .reports-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Category page — filter sidebar full width */
+  .filter-sidebar > div {
+    position: static !important;
+  }
+  
+  /* Post ad page — price/area 1 col */
+  .post-ad-fields-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Auth pages — smaller padding */
+  .auth-card {
+    padding: 28px 20px !important;
+    border-radius: 16px !important;
+  }
+
+  /* Profile edit fields grid */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Profile ad row actions wrap */
+  .profile-ad-actions {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  
+  /* Admin reports stats */
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Footer grid */
+  footer .page-container > div:first-child {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+  }
+
+  /* Notification bell dropdown */
+  .notif-dropdown {
+    width: calc(100vw - 32px) !important;
+    right: -60px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  footer .page-container > div:first-child {
+    grid-template-columns: 1fr !important;
+  }
+  .auth-card {
+    padding: 24px 16px !important;
+  }
+  /* Signup name row */
+  .signup-name-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

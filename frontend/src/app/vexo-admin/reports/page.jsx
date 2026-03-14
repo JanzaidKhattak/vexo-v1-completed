@@ -234,7 +234,7 @@ export default function AdminReportsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px', animation: 'fadeUp 0.4s ease 0.05s both' }}>
+      <div className='admin-stats-grid' style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px', animation: 'fadeUp 0.4s ease 0.05s both' }}>
         {[
           { label: 'Total Reports', value: stats.total || 0, bg: '#F8FAFC', color: '#0f172a', border: '#E2E8F0' },
           { label: 'Pending', value: stats.pending || 0, bg: '#FFFBEB', color: '#A16207', border: '#FCD34D' },

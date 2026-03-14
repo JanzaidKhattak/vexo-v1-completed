@@ -71,7 +71,7 @@ export default function AdminAdsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap', animation: 'fadeUp 0.4s ease 0.05s both' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', flexWrap: 'wrap', overflowX: 'auto', animation: 'fadeUp 0.4s ease 0.05s both' }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setFilter(t.key)} className="tab-btn" style={{
             padding: '8px 18px', borderRadius: '10px', fontSize: '13px',

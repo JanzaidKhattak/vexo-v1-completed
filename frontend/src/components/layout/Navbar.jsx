@@ -310,6 +310,7 @@ export default function Navbar() {
       position: "sticky", top: 0, zIndex: 100, width: "100%",
     }}>
       <style>{`
+        header nav::-webkit-scrollbar { display: none; }
         .nav-cat-link:hover { color: var(--brand-primary) !important; border-bottom-color: var(--brand-primary) !important; }
         .nav-cat-arrow { transition: transform 0.2s; }
         .nav-cat-parent:hover .nav-cat-arrow { transform: rotate(180deg); }
@@ -328,8 +329,16 @@ export default function Navbar() {
           transform: translateX(0) !important;
           pointer-events: auto !important;
         }
-        /* Ensure no parent clips the dropdown */
-        header nav, header nav > *, header .page-container { overflow: visible !important; }
+        /* Desktop: dropdowns need visible overflow; Mobile: nav scrolls */
+        @media (min-width: 769px) {
+          header nav { overflow: visible !important; }
+          header .page-container { overflow: visible !important; }
+        }
+        @media (max-width: 768px) {
+          header nav { overflow-x: auto !important; overflow-y: visible !important; }
+          .nav-cat-dropdown { display: none !important; }
+          .nav-flyout { display: none !important; }
+        }
       `}</style>
       {/* Main Row */}
       <div className="page-container" style={{
@@ -483,8 +492,8 @@ export default function Navbar() {
 
       {/* Categories */}
       <div style={{ borderTop: "1px solid var(--border-light)", overflow: "visible" }}>
-        <div className="page-container" style={{ overflow: "visible" }}>
-          <nav style={{ display: "flex", gap: "0", overflowX: "visible", scrollbarWidth: "none", position: "relative" }}>
+        <div className="page-container" style={{ overflow: "visible", padding: "0 20px" }}>
+          <nav style={{ display: "flex", gap: "0", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none", position: "relative", WebkitOverflowScrolling: "touch" }}>
             {(() => {
               const allCats = settings?.categories?.filter(c => c.isActive) || CATEGORIES;
               // Top-level = no parentId OR parentId is empty string or null

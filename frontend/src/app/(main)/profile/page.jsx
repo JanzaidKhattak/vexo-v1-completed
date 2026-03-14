@@ -365,7 +365,7 @@ function ProfilePageInner() {
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'flex', gap: '24px' }}>
+            <div className='profile-stats-row' style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
               {[
                 { label: 'Active Ads', value: activeAds.length },
                 { label: 'Sold', value: soldAds.length },
@@ -501,7 +501,7 @@ function ProfilePageInner() {
               </div>
 
               {/* Fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className='form-grid-2' style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     First Name

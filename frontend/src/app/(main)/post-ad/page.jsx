@@ -404,7 +404,7 @@ function PostAdPageInner() {
               onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
             />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className='post-ad-fields-grid' style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={lbl}>Price (Rs) *</label>
               <input type="number" value={price} onChange={e => setPrice(e.target.value)}

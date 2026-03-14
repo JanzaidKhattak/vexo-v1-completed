@@ -494,7 +494,7 @@ export default function AdDetailPage() {
           {/* ── FULL WIDTH: Safety ─────────────────────────────── */}
           <div style={{ background: 'white', borderRadius: '18px', padding: '26px 28px', border: '1px solid #E2E8F0', marginTop: '16px', boxShadow: '0 1px 4px rgba(0,0,0,0.03)', animation: 'fadeUp 0.5s ease 0.25s both' }}>
             <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.01em', marginBottom: '16px' }}>Your Safety Matters</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+            <div className='safety-grid' style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
               {[
                 'Meet in a safe, public location when exchanging items or money.',
                 'Never send advance payments without physically verifying the product.',
