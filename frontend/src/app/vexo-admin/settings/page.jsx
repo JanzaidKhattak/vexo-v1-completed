@@ -114,7 +114,7 @@ function Toggle({ value, onChange }) {
 const dragState = { fromIdx: -1 };
 
 // ── Draggable wrapper for CategoryRow ────────────────────────────────────────
-function DraggableCategoryRow({ cat, idx, categories, onReorder, onToggle, onRemove, onEdit, onIconUpload }) {
+function DraggableCategoryRow({ cat, idx, categories, onReorder, onToggle, onRemove, onEdit, onIconUpload, onPromote }) {
   const [isDragging,   setIsDragging]   = useState(false);
   const [dropSide,     setDropSide]     = useState(null); // null | "top" | "bottom" | "child"
   const rowRef = useRef(null);
@@ -211,13 +211,14 @@ function DraggableCategoryRow({ cat, idx, categories, onReorder, onToggle, onRem
         onRemove={onRemove}
         onEdit={onEdit}
         onIconUpload={onIconUpload}
+        onPromote={onPromote}
       />
     </div>
   );
 }
 
 // ── Category Row ──────────────────────────────────────────────────────────────
-function CategoryRow({ cat, idx, onToggle, onRemove, onEdit, onIconUpload, dragHandleProps, isDragging }) {
+function CategoryRow({ cat, idx, onToggle, onRemove, onEdit, onIconUpload, onPromote, dragHandleProps, isDragging }) {
   const [editing, setEditing]     = useState(false);
   const [editName, setEditName]   = useState(cat.name);
   const [editSlug, setEditSlug]   = useState(cat.slug || cat.id);
@@ -322,6 +323,16 @@ function CategoryRow({ cat, idx, onToggle, onRemove, onEdit, onIconUpload, dragH
           {editing ? "Cancel" : "Edit"}
         </button>
 
+        {/* Promote to top-level (only for sub-cats) */}
+        {cat.parentId && (
+          <button onClick={() => onPromote(idx)}
+            title="Move to top-level"
+            style={{ padding: "6px 10px", background: "#F0FDF4", color: "#15803D",
+              border: "1.5px solid #BBF7D0", borderRadius: "8px", fontSize: "11px",
+              fontWeight: "700", fontFamily: "'DM Sans', sans-serif", cursor: "pointer", transition: "all 0.15s", whiteSpace: "nowrap" }}>
+            ↑ Top
+          </button>
+        )}
         {/* Remove */}
         <button onClick={() => onRemove(idx)}
           style={{ padding: "6px 12px", background: "#FEF2F2", color: "#B91C1C",
@@ -569,8 +580,22 @@ export default function AdminSettingsPage() {
   };
 
   const handleRemoveCat = (idx) => {
-    if (!window.confirm("Remove this category?")) return;
-    setCategories(categories.filter((_, i) => i !== idx));
+    const cat = categories[idx];
+    // Count children
+    const childCount = categories.filter(c => c.parentId === cat.id).length;
+    const msg = childCount > 0
+      ? `Remove "${cat.name}" and its ${childCount} sub-categor${childCount > 1 ? 'ies' : 'y'}?`
+      : `Remove "${cat.name}"?`;
+    if (!window.confirm(msg)) return;
+    // Remove category + all its children
+    setCategories(prev => prev.filter((c, i) => i !== idx && c.parentId !== cat.id));
+  };
+
+  const handleCatPromote = (idx) => {
+    // Remove parentId → becomes top-level
+    const updated = [...categories];
+    updated[idx] = { ...updated[idx], parentId: null };
+    setCategories(updated);
   };
 
   const handleCatReorder = (fromIdx, toIdx, dropPosition, targetId) => {
@@ -792,6 +817,7 @@ export default function AdminSettingsPage() {
                   onRemove={handleRemoveCat}
                   onEdit={handleCatEdit}
                   onIconUpload={handleCatIconUpload}
+                  onPromote={handleCatPromote}
                 />
               ))}
             </div>

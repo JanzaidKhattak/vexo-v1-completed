@@ -21,23 +21,25 @@ const siteSettingsSchema = new mongoose.Schema({
   footerAddress: { type: String, default: 'Attock, Pakistan' },
   categories: {
     type: [{
-      id:          String,
-      name:        String,
-      icon:        String,
-      iconUrl:     { type: String, default: '' },
-      iconSize:    { type: Number, default: 28 },
-      slug:        String,
-      isActive:    { type: Boolean, default: true },
-      showOnHome:  { type: Boolean, default: true },  // ← NEW
+      id:         String,
+      name:       String,
+      icon:       String,
+      iconUrl:    { type: String,  default: '' },
+      iconSize:   { type: Number,  default: 28 },
+      slug:       String,
+      isActive:   { type: Boolean, default: true },
+      showOnHome: { type: Boolean, default: true },
+      parentId:   { type: String,  default: null },  // ← sub-category support
+      order:      { type: Number,  default: 0 },     // ← explicit order
     }],
     default: [
-      { id: 'mobiles',      name: 'Mobiles',          icon: '📱', slug: 'mobiles',      isActive: true, showOnHome: true },
-      { id: 'cars',         name: 'Cars',              icon: '🚗', slug: 'cars',         isActive: true, showOnHome: true },
-      { id: 'motorcycles',  name: 'Motorcycles',       icon: '🏍️', slug: 'motorcycles',  isActive: true, showOnHome: true },
-      { id: 'electronics',  name: 'Electronics',       icon: '💻', slug: 'electronics',  isActive: true, showOnHome: true },
-      { id: 'furniture',    name: 'Furniture & Home',  icon: '🛋️', slug: 'furniture',    isActive: true, showOnHome: true },
-      { id: 'fashion',      name: 'Fashion & Beauty',  icon: '👗', slug: 'fashion',      isActive: true, showOnHome: true },
-      { id: 'others',       name: 'Others',            icon: '📦', slug: 'others',       isActive: true, showOnHome: true },
+      { id: 'mobiles',     name: 'Mobiles',         icon: '📱', slug: 'mobiles',     isActive: true, showOnHome: true, parentId: null, order: 0 },
+      { id: 'cars',        name: 'Cars',             icon: '🚗', slug: 'cars',        isActive: true, showOnHome: true, parentId: null, order: 1 },
+      { id: 'motorcycles', name: 'Motorcycles',      icon: '🏍️', slug: 'motorcycles', isActive: true, showOnHome: true, parentId: null, order: 2 },
+      { id: 'electronics', name: 'Electronics',      icon: '💻', slug: 'electronics', isActive: true, showOnHome: true, parentId: null, order: 3 },
+      { id: 'furniture',   name: 'Furniture & Home', icon: '🛋️', slug: 'furniture',   isActive: true, showOnHome: true, parentId: null, order: 4 },
+      { id: 'fashion',     name: 'Fashion & Beauty', icon: '👗', slug: 'fashion',     isActive: true, showOnHome: true, parentId: null, order: 5 },
+      { id: 'others',      name: 'Others',           icon: '📦', slug: 'others',      isActive: true, showOnHome: true, parentId: null, order: 6 },
     ]
   },
   chatButtonEnabled: { type: Boolean, default: true },
