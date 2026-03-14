@@ -110,54 +110,70 @@ function Toggle({ value, onChange }) {
   );
 }
 
+// ── Drag state shared ref (avoids stale closure) ─────────────────────────────
+const dragState = { fromIdx: -1 };
+
 // ── Draggable wrapper for CategoryRow ────────────────────────────────────────
 function DraggableCategoryRow({ cat, idx, categories, onReorder, onToggle, onRemove, onEdit, onIconUpload }) {
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [dropPosition, setDropPosition] = useState("center"); // "top" | "center" | "child"
+  const [isDragging,   setIsDragging]   = useState(false);
+  const [dropSide,     setDropSide]     = useState(null); // null | "top" | "bottom" | "child"
   const rowRef = useRef(null);
 
   const handleDragStart = (e) => {
+    dragState.fromIdx = idx;
     setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", String(idx));
+    // Ghost image
+    if (rowRef.current) {
+      e.dataTransfer.setDragImage(rowRef.current, 20, 20);
+    }
   };
 
   const handleDragEnd = () => {
+    dragState.fromIdx = -1;
     setIsDragging(false);
-    setIsDragOver(false);
+    setDropSide(null);
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
+    if (dragState.fromIdx === idx) return;
     e.dataTransfer.dropEffect = "move";
-    setIsDragOver(true);
-    // Detect if mouse is on right side → make child
     const rect = rowRef.current?.getBoundingClientRect();
-    if (rect) {
-      const relX = e.clientX - rect.left;
-      if (relX > rect.width * 0.55) {
-        setDropPosition("child");
-      } else {
-        const relY = e.clientY - rect.top;
-        setDropPosition(relY < rect.height / 2 ? "top" : "center");
-      }
+    if (!rect) return;
+    const relX = e.clientX - rect.left;
+    const relY = e.clientY - rect.top;
+    // Right 40% of row = make child
+    if (relX > rect.width * 0.6) {
+      setDropSide("child");
+    } else if (relY < rect.height * 0.4) {
+      setDropSide("top");
+    } else {
+      setDropSide("bottom");
     }
   };
 
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-    setDropPosition("center");
+  const handleDragLeave = (e) => {
+    // Only clear if leaving the actual row (not entering a child element)
+    if (!rowRef.current?.contains(e.relatedTarget)) {
+      setDropSide(null);
+    }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    setIsDragOver(false);
-    const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
-    if (fromIdx === idx) return;
-    onReorder(fromIdx, idx, dropPosition, cat.id);
-    setDropPosition("center");
+    const fromIdx = dragState.fromIdx;
+    setDropSide(null);
+    if (fromIdx === -1 || fromIdx === idx) return;
+    onReorder(fromIdx, idx, dropSide || "bottom", cat.id);
   };
+
+  // Visual indicator styles
+  const borderTop    = dropSide === "top"    ? "3px solid #6C3AF5" : "3px solid transparent";
+  const borderBottom = dropSide === "bottom" ? "3px solid #6C3AF5" : "3px solid transparent";
+  const boxShadow    = dropSide === "child"  ? "inset -4px 0 0 #6C3AF5" : "none";
+  const childHint    = dropSide === "child";
 
   return (
     <div
@@ -169,18 +185,28 @@ function DraggableCategoryRow({ cat, idx, categories, onReorder, onToggle, onRem
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       style={{
-        opacity: isDragging ? 0.4 : 1,
-        transition: "opacity 0.15s",
-        borderTop: isDragOver && dropPosition === "top" ? "3px solid #6C3AF5" : "3px solid transparent",
-        borderBottom: isDragOver && dropPosition === "center" ? "3px solid #6C3AF5" : "3px solid transparent",
-        borderRight: isDragOver && dropPosition === "child" ? "4px solid #6C3AF5" : "4px solid transparent",
+        opacity: isDragging ? 0.35 : 1,
+        transition: "opacity 0.15s, box-shadow 0.1s",
+        borderTop, borderBottom, boxShadow,
         borderRadius: "14px",
+        position: "relative",
       }}
     >
+      {/* Child drop hint label */}
+      {childHint && (
+        <div style={{
+          position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)",
+          background: "#6C3AF5", color: "white", fontSize: "11px", fontWeight: "700",
+          fontFamily: "'DM Sans', sans-serif", padding: "3px 10px", borderRadius: "20px",
+          pointerEvents: "none", zIndex: 5,
+        }}>
+          Make sub-category
+        </div>
+      )}
       <CategoryRow
         cat={cat} idx={idx}
         isDragging={isDragging}
-        dragHandleProps={{}} // already draggable via parent div
+        dragHandleProps={{}}
         onToggle={onToggle}
         onRemove={onRemove}
         onEdit={onEdit}
@@ -550,18 +576,31 @@ export default function AdminSettingsPage() {
   const handleCatReorder = (fromIdx, toIdx, dropPosition, targetId) => {
     const updated = [...categories];
     const [moved] = updated.splice(fromIdx, 1);
+    // toIdx may have shifted after splice
+    const newToIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
 
     if (dropPosition === "child") {
-      // Make it a sub-category of the target
+      // Make sub-category of targetId
       moved.parentId = targetId;
-      // Insert right after target
-      const targetNewIdx = updated.findIndex(c => c.id === targetId);
-      updated.splice(targetNewIdx + 1, 0, moved);
-    } else {
-      // Remove parentId — it becomes a top-level category
+      // Find target in updated array (after splice)
+      const targetPos = updated.findIndex(c => c.id === targetId);
+      if (targetPos === -1) {
+        updated.push(moved);
+      } else {
+        // Insert right after target (and after any existing children of target)
+        let insertAt = targetPos + 1;
+        while (insertAt < updated.length && updated[insertAt].parentId === targetId) {
+          insertAt++;
+        }
+        updated.splice(insertAt, 0, moved);
+      }
+    } else if (dropPosition === "top") {
       delete moved.parentId;
-      const adjustedTo = fromIdx < toIdx ? toIdx - 1 : toIdx;
-      updated.splice(adjustedTo, 0, moved);
+      updated.splice(newToIdx, 0, moved);
+    } else {
+      // bottom
+      delete moved.parentId;
+      updated.splice(newToIdx + 1, 0, moved);
     }
     setCategories(updated);
   };
