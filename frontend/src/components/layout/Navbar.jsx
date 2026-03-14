@@ -183,148 +183,104 @@ function UserDropdown({ user, onLogout }) {
   );
 }
 
-// ── Helper: normalize parentId (null / undefined / "" → all mean "top level") ─
-const isTopLevel = (cat) => !cat.parentId;
-const isChildOf  = (cat, parentId) => cat.parentId === parentId;
-
-// ── Dropdown flyout item (supports one more level of nesting) ─────────────────
-function DropdownItem({ child, allCats, level = 0 }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-  const timerRef = useRef(null);
-
-  // Normalize: grandchildren whose parentId exactly matches child.id
-  const grandChildren = allCats.filter(c => isChildOf(c, child.id) && c.isActive);
-  const hasGrandChildren = grandChildren.length > 0;
-
-  const show = () => { clearTimeout(timerRef.current); setOpen(true); };
-  const hide = () => { timerRef.current = setTimeout(() => setOpen(false), 150); };
-
-  return (
-    <div ref={wrapRef} style={{ position: "relative" }} onMouseEnter={show} onMouseLeave={hide}>
-      <Link
-        href={`/category/${child.id}`}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: "8px", padding: "9px 12px", borderRadius: "8px",
-          textDecoration: "none", fontSize: "13px", fontWeight: "500",
-          color: open ? "var(--brand-primary)" : "#374151",
-          background: open ? "#F5F3FF" : "transparent",
-          fontFamily: "'DM Sans', sans-serif", transition: "all 0.12s", whiteSpace: "nowrap",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = "#F5F3FF"; e.currentTarget.style.color = "var(--brand-primary)"; }}
-        onMouseLeave={e => {
-          if (!open) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#374151"; }
-        }}
-      >
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {child.iconUrl
-            ? <img src={child.iconUrl} alt="" style={{ width: "15px", height: "15px", objectFit: "contain" }} />
-            : child.icon ? <span style={{ fontSize: "13px" }}>{child.icon}</span> : null}
-          {child.name}
-        </span>
-        {hasGrandChildren && (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        )}
-      </Link>
-
-      {/* Flyout — renders to the right */}
-      {hasGrandChildren && open && (
-        <div style={{
-          position: "fixed",
-          // We calculate position via JS — use CSS trick with margin
-          marginTop: "-44px",
-          marginLeft: "4px",
-          minWidth: "190px", background: "white", borderRadius: "12px", padding: "6px",
-          boxShadow: "0 16px 48px rgba(0,0,0,0.14)", border: "1px solid #F1F5F9",
-          zIndex: 9999, animation: "dropIn 0.15s ease",
-        }}
-          // Override position to be relative to wrapRef
-          ref={el => {
-            if (!el || !wrapRef.current) return;
-            const r = wrapRef.current.getBoundingClientRect();
-            el.style.top  = r.top + "px";
-            el.style.left = (r.right + 6) + "px";
-          }}
-          onMouseEnter={show}
-          onMouseLeave={hide}
-        >
-          {grandChildren.map(gc => (
-            <DropdownItem key={gc.id} child={gc} allCats={allCats} level={level + 1} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Top-level nav item with dropdown ─────────────────────────────────────────
+// ── CSS-based dropdown (no React state — 100% reliable) ─────────────────────
 function NavCategoryItem({ cat, allCats }) {
-  const [open, setOpen] = useState(false);
-  const timerRef = useRef(null);
-  const wrapRef  = useRef(null);
-
-  // Direct children only — parentId === cat.id
-  const children = allCats.filter(c => isChildOf(c, cat.id) && c.isActive);
+  const children = allCats.filter(c => c.parentId === cat.id && c.isActive);
   const hasChildren = children.length > 0;
-
-  const show = () => { clearTimeout(timerRef.current); setOpen(true); };
-  const hide = () => { timerRef.current = setTimeout(() => setOpen(false), 150); };
-
-  const baseLinkStyle = {
-    display: "flex", alignItems: "center", gap: "5px",
-    padding: "12px 16px", fontSize: "13px", fontWeight: "500",
-    textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
-    whiteSpace: "nowrap", transition: "all 0.15s", cursor: "pointer",
-    borderBottom: "2px solid transparent",
-  };
 
   if (!hasChildren) {
     return (
-      <Link href={`/category/${cat.id}`}
-        style={{ ...baseLinkStyle, color: "var(--text-secondary)" }}
-        onMouseEnter={e => { e.currentTarget.style.color = "var(--brand-primary)"; e.currentTarget.style.borderBottomColor = "var(--brand-primary)"; }}
-        onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderBottomColor = "transparent"; }}
-      >
+      <Link href={`/category/${cat.id}`} className="nav-cat-link" style={{
+        display: "flex", alignItems: "center",
+        padding: "12px 16px", fontSize: "13px", fontWeight: "500",
+        color: "var(--text-secondary)", textDecoration: "none",
+        fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap",
+        borderBottom: "2px solid transparent", transition: "all 0.15s",
+      }}>
         {cat.name}
       </Link>
     );
   }
 
   return (
-    <div ref={wrapRef} style={{ position: "relative" }} onMouseEnter={show} onMouseLeave={hide}>
-      <style>{`@keyframes dropIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }`}</style>
-
-      <Link href={`/category/${cat.id}`}
-        style={{ ...baseLinkStyle,
-          color: open ? "var(--brand-primary)" : "var(--text-secondary)",
-          borderBottomColor: open ? "var(--brand-primary)" : "transparent",
-        }}
-      >
+    <div className="nav-cat-parent" style={{ position: "relative" }}>
+      <Link href={`/category/${cat.id}`} className="nav-cat-link nav-cat-has-children" style={{
+        display: "flex", alignItems: "center", gap: "5px",
+        padding: "12px 16px", fontSize: "13px", fontWeight: "500",
+        color: "var(--text-secondary)", textDecoration: "none",
+        fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap",
+        borderBottom: "2px solid transparent", transition: "all 0.15s",
+      }}>
         {cat.name}
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-          style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+        <svg className="nav-cat-arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ transition: "transform 0.2s", flexShrink: 0 }}>
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       </Link>
 
-      {/* Primary dropdown — positioned below nav bar */}
-      {open && (
-        <div
-          onMouseEnter={show}
-          onMouseLeave={hide}
-          style={{
-            position: "absolute", top: "calc(100% + 2px)", left: "0",
-            minWidth: "210px", background: "white", borderRadius: "12px", padding: "6px",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.07)",
-            border: "1px solid #F1F5F9", zIndex: 9999,
-            animation: "dropIn 0.18s ease",
-          }}
-        >
-          {children.map(child => (
-            <DropdownItem key={child.id} child={child} allCats={allCats} />
+      {/* Dropdown panel */}
+      <div className="nav-cat-dropdown" style={{
+        position: "absolute", top: "100%", left: "0",
+        minWidth: "210px", background: "white", borderRadius: "12px", padding: "6px",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.07)",
+        border: "1px solid #F1F5F9", zIndex: 9999,
+        opacity: 0, visibility: "hidden", transform: "translateY(-6px)",
+        transition: "opacity 0.18s ease, transform 0.18s ease, visibility 0.18s",
+        pointerEvents: "none",
+      }}>
+        {children.map(child => (
+          <NavDropdownItem key={child.id} child={child} allCats={allCats} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NavDropdownItem({ child, allCats }) {
+  const grandChildren = allCats.filter(c => c.parentId === child.id && c.isActive);
+  const hasGrand = grandChildren.length > 0;
+
+  return (
+    <div className="nav-drop-item-wrap" style={{ position: "relative" }}>
+      <Link href={`/category/${child.id}`} className="nav-drop-item" style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        gap: "8px", padding: "9px 12px", borderRadius: "8px",
+        textDecoration: "none", fontSize: "13px", fontWeight: "500",
+        color: "#374151", fontFamily: "'DM Sans', sans-serif",
+        whiteSpace: "nowrap", transition: "all 0.12s",
+      }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {child.iconUrl
+            ? <img src={child.iconUrl} alt="" style={{ width: "15px", height: "15px", objectFit: "contain" }} />
+            : child.icon ? <span style={{ fontSize: "13px" }}>{child.icon}</span> : null}
+          {child.name}
+        </span>
+        {hasGrand && (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        )}
+      </Link>
+
+      {hasGrand && (
+        <div className="nav-flyout" style={{
+          position: "absolute", top: "0", left: "100%", marginLeft: "4px",
+          minWidth: "190px", background: "white", borderRadius: "12px", padding: "6px",
+          boxShadow: "0 16px 48px rgba(0,0,0,0.13)", border: "1px solid #F1F5F9",
+          zIndex: 10000,
+          opacity: 0, visibility: "hidden", transform: "translateX(-6px)",
+          transition: "opacity 0.15s ease, transform 0.15s ease, visibility 0.15s",
+          pointerEvents: "none",
+        }}>
+          {grandChildren.map(gc => (
+            <Link key={gc.id} href={`/category/${gc.id}`} className="nav-drop-item" style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "9px 12px", borderRadius: "8px",
+              textDecoration: "none", fontSize: "13px", fontWeight: "500",
+              color: "#374151", fontFamily: "'DM Sans', sans-serif", transition: "all 0.12s",
+            }}>
+              {gc.icon && <span style={{ fontSize: "13px" }}>{gc.icon}</span>}
+              {gc.name}
+            </Link>
           ))}
         </div>
       )}
@@ -353,6 +309,24 @@ export default function Navbar() {
       borderBottom: "1px solid var(--border-default)",
       position: "sticky", top: 0, zIndex: 100, width: "100%",
     }}>
+      <style>{`
+        .nav-cat-link:hover { color: var(--brand-primary) !important; border-bottom-color: var(--brand-primary) !important; }
+        .nav-cat-arrow { transition: transform 0.2s; }
+        .nav-cat-parent:hover .nav-cat-arrow { transform: rotate(180deg); }
+        .nav-cat-parent:hover > .nav-cat-dropdown {
+          opacity: 1 !important;
+          visibility: visible !important;
+          transform: translateY(0) !important;
+          pointer-events: auto !important;
+        }
+        .nav-drop-item:hover { background: #F5F3FF !important; color: var(--brand-primary) !important; }
+        .nav-drop-item-wrap:hover > .nav-flyout {
+          opacity: 1 !important;
+          visibility: visible !important;
+          transform: translateX(0) !important;
+          pointer-events: auto !important;
+        }
+      `}</style>
       {/* Main Row */}
       <div className="page-container" style={{
         display: "flex", alignItems: "center",
