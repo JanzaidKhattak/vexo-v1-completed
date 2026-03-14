@@ -73,8 +73,9 @@ export default function CategoryPage() {
   const [filters,     setFilters]     = useState({})
   const [minPrice,    setMinPrice]    = useState('')
   const [maxPrice,    setMaxPrice]    = useState('')
-  const [cityFilter,  setCityFilter]  = useState('')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [cityFilter,     setCityFilter]     = useState('')
+  const [sidebarOpen,    setSidebarOpen]    = useState(true)
+  const [drawerOpen,     setDrawerOpen]     = useState(false)
 
   const categoryName = (() => {
     const cat = settings?.categories?.find(c => c.id === slug || c.slug === slug)
@@ -139,10 +140,123 @@ export default function CategoryPage() {
         </p>
       </div>
 
+      {/* Mobile Filter Button */}
+      <div className="show-mobile" style={{ display: 'none', marginBottom: '12px' }}>
+        <button
+          onClick={() => setDrawerOpen(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 16px', borderRadius: '10px', fontSize: '14px',
+            fontWeight: '600', fontFamily: "'DM Sans', sans-serif",
+            background: hasActiveFilters ? 'var(--brand-primary)' : 'white',
+            color: hasActiveFilters ? 'white' : '#374151',
+            border: `1.5px solid ${hasActiveFilters ? 'var(--brand-primary)' : '#E2E8F0'}`,
+            cursor: 'pointer', width: '100%', justifyContent: 'center',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/>
+          </svg>
+          Filters {activeCount > 0 && `(${activeCount})`}
+        </button>
+      </div>
+
+      {/* Mobile Filter Drawer */}
+      {drawerOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
+          {/* Overlay */}
+          <div onClick={() => setDrawerOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }} />
+          {/* Drawer */}
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0,
+            background: 'white', borderRadius: '20px 20px 0 0',
+            padding: '0 0 32px', maxHeight: '85vh', overflowY: 'auto',
+            animation: 'slideUpDrawer 0.3s ease',
+          }}>
+            <style>{`@keyframes slideUpDrawer { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
+            {/* Handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+              <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: '#E2E8F0' }} />
+            </div>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px 16px', borderBottom: '1px solid #F1F5F9' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', fontFamily: "'DM Sans', sans-serif", color: '#0f172a' }}>Filters</h3>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {hasActiveFilters && (
+                  <button onClick={clearFilters} style={{ fontSize: '13px', fontWeight: '600', color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    Clear All
+                  </button>
+                )}
+                <button onClick={() => setDrawerOpen(false)} style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#F8FAFC', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', color: '#64748B' }}>✕</button>
+              </div>
+            </div>
+            {/* Filter Content */}
+            <div style={{ padding: '16px 20px' }}>
+              {/* Price */}
+              <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>Price Range (Rs)</p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {[['Min', minPrice, setMinPrice], ['Max', maxPrice, setMaxPrice]].map(([label, val, setter]) => (
+                    <input key={label} type="number" placeholder={label} value={val}
+                      onChange={e => setter(e.target.value)} onBlur={() => setPage(1)}
+                      style={{ flex: 1, minWidth: 0, padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+                      onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
+                      onBlur2={e => e.target.style.borderColor = '#E2E8F0'}
+                    />
+                  ))}
+                </div>
+              </div>
+              {/* City */}
+              <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>City</p>
+                <select value={cityFilter} onChange={e => { setCityFilter(e.target.value); setPage(1) }}
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", outline: 'none', background: 'white' }}>
+                  <option value="">All Pakistan</option>
+                  {PAKISTAN_LOCATIONS.map(p => (
+                    <optgroup key={p.province} label={p.province}>
+                      {p.cities.map(city => <option key={city} value={city}>{city}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              {/* Dynamic filters */}
+              {categoryFilters.map(f => (
+                <div key={f.key} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+                  <p style={{ fontSize: '13px', fontWeight: '700', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>{f.label}</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {f.options.map(opt => (
+                      <button key={opt} onClick={() => handleFilterChange(f.key, opt)} style={{
+                        padding: '8px 14px', borderRadius: '20px', fontSize: '13px',
+                        fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
+                        fontWeight: filters[f.key] === opt ? '600' : '400',
+                        background: filters[f.key] === opt ? 'var(--brand-primary)' : '#F8FAFC',
+                        color: filters[f.key] === opt ? 'white' : '#374151',
+                        border: filters[f.key] === opt ? 'none' : '1px solid #E2E8F0',
+                      }}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Apply Button */}
+            <div style={{ padding: '0 20px' }}>
+              <button onClick={() => setDrawerOpen(false)} style={{
+                width: '100%', padding: '14px', background: 'var(--brand-primary)',
+                color: 'white', border: 'none', borderRadius: '12px',
+                fontSize: '15px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
+                cursor: 'pointer',
+              }}>
+                Show {total} Ads
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="filter-layout" style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
 
-        {/* Sidebar */}
-        <div className="filter-sidebar" style={{ width: sidebarOpen ? '240px' : '0px', minWidth: sidebarOpen ? '240px' : '0px', overflow: 'hidden', transition: 'all 0.3s ease', flexShrink: 0 }}>
+        {/* Sidebar — desktop only */}
+        <div className="filter-sidebar hide-mobile" style={{ width: sidebarOpen ? '240px' : '0px', minWidth: sidebarOpen ? '240px' : '0px', overflow: 'hidden', transition: 'all 0.3s ease', flexShrink: 0 }}>
           <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', position: 'sticky', top: '20px' }}>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -223,7 +337,7 @@ export default function CategoryPage() {
 
           {/* Toolbar */}
           <div className="filter-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+            <button className="hide-mobile" onClick={() => setSidebarOpen(!sidebarOpen)} style={{
               padding: '8px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600',
               fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
               background: 'white', border: '1.5px solid #E2E8F0', color: '#374151', transition: 'all 0.15s',

@@ -40,6 +40,7 @@ function LocationPicker() {
     <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={() => setOpen(!open)}
+        className="location-btn"
         style={{
           display: "flex", alignItems: "center", gap: "5px",
           padding: "6px 10px", background: "var(--bg-secondary)",
@@ -67,8 +68,9 @@ function LocationPicker() {
         <>
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 199 }} />
           <div style={{
-            position: "absolute", top: "44px", left: 0,
-            width: "280px", background: "white", borderRadius: "14px",
+            position: "fixed", top: "auto", left: "50%", transform: "translateX(-50%)",
+            width: "min(300px, 90vw)", background: "white", borderRadius: "14px",
+            marginTop: "8px",
             boxShadow: "0 20px 60px rgba(0,0,0,0.12)", border: "1px solid #F1F5F9",
             zIndex: 200, overflow: "hidden",
           }}>
@@ -475,6 +477,10 @@ export default function Navbar() {
     }}>
       <style>{`
         header nav::-webkit-scrollbar { display: none; }
+        @media (max-width: 768px) {
+          .location-btn { max-width: 110px !important; padding: 5px 8px !important; }
+          .location-btn span { font-size: 12px !important; }
+        }
         .nav-cat-link:hover { color: var(--brand-primary) !important; border-bottom-color: var(--brand-primary) !important; }
         .nav-cat-arrow { transition: transform 0.2s; }
         .nav-cat-parent:hover .nav-cat-arrow { transform: rotate(180deg); }
@@ -534,10 +540,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Location Picker */}
-        <div className="hide-mobile">
-          <LocationPicker />
-        </div>
+        {/* Location Picker — show on all screens */}
+        <LocationPicker />
 
         {/* Search */}
         <form onSubmit={handleSearch} className="hide-mobile" style={{ flex: 1, display: "flex", maxWidth: "480px" }}>
@@ -646,8 +650,8 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Categories */}
-      <div style={{ borderTop: "1px solid var(--border-light)", overflow: "visible" }}>
+      {/* Categories — hidden on mobile, shown on desktop */}
+      <div className="hide-mobile" style={{ borderTop: "1px solid var(--border-light)", overflow: "visible" }}>
         <div className="page-container" style={{ overflow: "visible", padding: "0 20px" }}>
           <nav style={{ display: "flex", gap: "0", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none", position: "relative", WebkitOverflowScrolling: "touch" }}>
             {(() => {
