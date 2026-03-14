@@ -183,37 +183,44 @@ function UserDropdown({ user, onLogout }) {
   );
 }
 
-// ── Navbar Category Item with optional multi-level dropdown ──────────────────
-function DropdownItem({ child, allCats }) {
+// ── Helper: normalize parentId (null / undefined / "" → all mean "top level") ─
+const isTopLevel = (cat) => !cat.parentId;
+const isChildOf  = (cat, parentId) => cat.parentId === parentId;
+
+// ── Dropdown flyout item (supports one more level of nesting) ─────────────────
+function DropdownItem({ child, allCats, level = 0 }) {
   const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
   const timerRef = useRef(null);
-  const grandChildren = allCats.filter(c => c.parentId === child.id && c.isActive);
+
+  // Normalize: grandchildren whose parentId exactly matches child.id
+  const grandChildren = allCats.filter(c => isChildOf(c, child.id) && c.isActive);
   const hasGrandChildren = grandChildren.length > 0;
 
+  const show = () => { clearTimeout(timerRef.current); setOpen(true); };
+  const hide = () => { timerRef.current = setTimeout(() => setOpen(false), 150); };
+
   return (
-    <div
-      style={{ position: "relative" }}
-      onMouseEnter={() => { clearTimeout(timerRef.current); setOpen(true); }}
-      onMouseLeave={() => { timerRef.current = setTimeout(() => setOpen(false), 120); }}
-    >
+    <div ref={wrapRef} style={{ position: "relative" }} onMouseEnter={show} onMouseLeave={hide}>
       <Link
         href={`/category/${child.id}`}
         style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px",
-          padding: "9px 12px", borderRadius: "8px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: "8px", padding: "9px 12px", borderRadius: "8px",
           textDecoration: "none", fontSize: "13px", fontWeight: "500",
-          color: "#374151", fontFamily: "'DM Sans', sans-serif",
-          transition: "all 0.12s", whiteSpace: "nowrap",
+          color: open ? "var(--brand-primary)" : "#374151",
+          background: open ? "#F5F3FF" : "transparent",
+          fontFamily: "'DM Sans', sans-serif", transition: "all 0.12s", whiteSpace: "nowrap",
         }}
         onMouseEnter={e => { e.currentTarget.style.background = "#F5F3FF"; e.currentTarget.style.color = "var(--brand-primary)"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#374151"; }}
+        onMouseLeave={e => {
+          if (!open) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#374151"; }
+        }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {child.iconUrl ? (
-            <img src={child.iconUrl} alt="" style={{ width: "16px", height: "16px", objectFit: "contain", flexShrink: 0 }} />
-          ) : child.icon ? (
-            <span style={{ fontSize: "14px" }}>{child.icon}</span>
-          ) : null}
+          {child.iconUrl
+            ? <img src={child.iconUrl} alt="" style={{ width: "15px", height: "15px", objectFit: "contain" }} />
+            : child.icon ? <span style={{ fontSize: "13px" }}>{child.icon}</span> : null}
           {child.name}
         </span>
         {hasGrandChildren && (
@@ -222,23 +229,30 @@ function DropdownItem({ child, allCats }) {
           </svg>
         )}
       </Link>
-      {/* Grand-children flyout */}
+
+      {/* Flyout — renders to the right */}
       {hasGrandChildren && open && (
         <div style={{
-          position: "absolute", top: "0", left: "100%", marginLeft: "4px",
-          minWidth: "180px", background: "white", borderRadius: "12px", padding: "6px",
-          boxShadow: "0 16px 48px rgba(0,0,0,0.12)", border: "1px solid #F1F5F9",
-          zIndex: 210, animation: "dropIn 0.15s ease",
-        }}>
+          position: "fixed",
+          // We calculate position via JS — use CSS trick with margin
+          marginTop: "-44px",
+          marginLeft: "4px",
+          minWidth: "190px", background: "white", borderRadius: "12px", padding: "6px",
+          boxShadow: "0 16px 48px rgba(0,0,0,0.14)", border: "1px solid #F1F5F9",
+          zIndex: 9999, animation: "dropIn 0.15s ease",
+        }}
+          // Override position to be relative to wrapRef
+          ref={el => {
+            if (!el || !wrapRef.current) return;
+            const r = wrapRef.current.getBoundingClientRect();
+            el.style.top  = r.top + "px";
+            el.style.left = (r.right + 6) + "px";
+          }}
+          onMouseEnter={show}
+          onMouseLeave={hide}
+        >
           {grandChildren.map(gc => (
-            <Link key={gc.id} href={`/category/${gc.id}`}
-              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 12px", borderRadius: "8px", textDecoration: "none", fontSize: "13px", fontWeight: "500", color: "#374151", fontFamily: "'DM Sans', sans-serif", transition: "all 0.12s" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#F5F3FF"; e.currentTarget.style.color = "var(--brand-primary)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#374151"; }}
-            >
-              {gc.icon && <span style={{ fontSize: "13px" }}>{gc.icon}</span>}
-              {gc.name}
-            </Link>
+            <DropdownItem key={gc.id} child={gc} allCats={allCats} level={level + 1} />
           ))}
         </div>
       )}
@@ -246,27 +260,31 @@ function DropdownItem({ child, allCats }) {
   );
 }
 
+// ── Top-level nav item with dropdown ─────────────────────────────────────────
 function NavCategoryItem({ cat, allCats }) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef(null);
-  const children = allCats.filter(c => c.parentId === cat.id && c.isActive);
+  const wrapRef  = useRef(null);
+
+  // Direct children only — parentId === cat.id
+  const children = allCats.filter(c => isChildOf(c, cat.id) && c.isActive);
   const hasChildren = children.length > 0;
 
-  const showDropdown = () => { clearTimeout(timerRef.current); setOpen(true); };
-  const hideDropdown = () => { timerRef.current = setTimeout(() => setOpen(false), 120); };
+  const show = () => { clearTimeout(timerRef.current); setOpen(true); };
+  const hide = () => { timerRef.current = setTimeout(() => setOpen(false), 150); };
 
-  const linkStyle = {
-    display: "flex", alignItems: "center", gap: "4px",
+  const baseLinkStyle = {
+    display: "flex", alignItems: "center", gap: "5px",
     padding: "12px 16px", fontSize: "13px", fontWeight: "500",
-    color: open ? "var(--brand-primary)" : "var(--text-secondary)",
     textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
-    whiteSpace: "nowrap", borderBottom: `2px solid ${open ? "var(--brand-primary)" : "transparent"}`,
-    transition: "all 0.15s", cursor: "pointer",
+    whiteSpace: "nowrap", transition: "all 0.15s", cursor: "pointer",
+    borderBottom: "2px solid transparent",
   };
 
   if (!hasChildren) {
     return (
-      <Link href={`/category/${cat.id}`} style={{ ...linkStyle, color: "var(--text-secondary)", borderBottom: "2px solid transparent" }}
+      <Link href={`/category/${cat.id}`}
+        style={{ ...baseLinkStyle, color: "var(--text-secondary)" }}
         onMouseEnter={e => { e.currentTarget.style.color = "var(--brand-primary)"; e.currentTarget.style.borderBottomColor = "var(--brand-primary)"; }}
         onMouseLeave={e => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.borderBottomColor = "transparent"; }}
       >
@@ -276,27 +294,35 @@ function NavCategoryItem({ cat, allCats }) {
   }
 
   return (
-    <div style={{ position: "relative" }} onMouseEnter={showDropdown} onMouseLeave={hideDropdown}>
-      <style>{`
-        @keyframes dropIn {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-      <Link href={`/category/${cat.id}`} style={linkStyle}>
+    <div ref={wrapRef} style={{ position: "relative" }} onMouseEnter={show} onMouseLeave={hide}>
+      <style>{`@keyframes dropIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }`}</style>
+
+      <Link href={`/category/${cat.id}`}
+        style={{ ...baseLinkStyle,
+          color: open ? "var(--brand-primary)" : "var(--text-secondary)",
+          borderBottomColor: open ? "var(--brand-primary)" : "transparent",
+        }}
+      >
         {cat.name}
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-          style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+          style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
           <polyline points="6 9 12 15 18 9"/>
         </svg>
       </Link>
+
+      {/* Primary dropdown — positioned below nav bar */}
       {open && (
-        <div style={{
-          position: "absolute", top: "100%", left: "0",
-          minWidth: "210px", background: "white", borderRadius: "12px", padding: "6px",
-          boxShadow: "0 16px 48px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06)",
-          border: "1px solid #F1F5F9", zIndex: 200, animation: "dropIn 0.18s ease",
-        }}>
+        <div
+          onMouseEnter={show}
+          onMouseLeave={hide}
+          style={{
+            position: "absolute", top: "calc(100% + 2px)", left: "0",
+            minWidth: "210px", background: "white", borderRadius: "12px", padding: "6px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.13), 0 4px 16px rgba(0,0,0,0.07)",
+            border: "1px solid #F1F5F9", zIndex: 9999,
+            animation: "dropIn 0.18s ease",
+          }}
+        >
           {children.map(child => (
             <DropdownItem key={child.id} child={child} allCats={allCats} />
           ))}
@@ -483,7 +509,8 @@ export default function Navbar() {
           <nav style={{ display: "flex", gap: "0", overflowX: "auto", scrollbarWidth: "none" }}>
             {(() => {
               const allCats = settings?.categories?.filter(c => c.isActive) || CATEGORIES;
-              const parents = allCats.filter(c => !c.parentId);
+              // Top-level = no parentId OR parentId is empty string or null
+              const parents = allCats.filter(c => !c.parentId || c.parentId === "");
               return parents.map(cat => (
                 <NavCategoryItem
                   key={cat.id}

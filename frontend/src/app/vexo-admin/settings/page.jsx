@@ -620,11 +620,11 @@ export default function AdminSettingsPage() {
         updated.splice(insertAt, 0, moved);
       }
     } else if (dropPosition === "top") {
-      delete moved.parentId;
+      moved.parentId = null;
       updated.splice(newToIdx, 0, moved);
     } else {
       // bottom
-      delete moved.parentId;
+      moved.parentId = null;
       updated.splice(newToIdx + 1, 0, moved);
     }
     setCategories(updated);
