@@ -92,6 +92,7 @@ export default function CategoryPage() {
       const params = new URLSearchParams({ category: slug, page, limit: LIMIT, sortBy })
       const activeCity = cityFilter || (!location?.isDefault ? location?.city : null)
       if (activeCity) params.append('city', activeCity)
+      if (areaSearch.trim()) params.append('area', areaSearch.trim())
       if (minPrice) params.append('minPrice', minPrice)
       if (maxPrice) params.append('maxPrice', maxPrice)
       Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, v) })
@@ -103,7 +104,7 @@ export default function CategoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [slug, page, sortBy, filters, minPrice, maxPrice, location, cityFilter])
+  }, [slug, page, sortBy, filters, minPrice, maxPrice, location, cityFilter, areaSearch])
 
   useEffect(() => { fetchAds() }, [fetchAds])
 
@@ -112,10 +113,10 @@ export default function CategoryPage() {
     setPage(1)
   }
 
-  const clearFilters = () => { setFilters({}); setMinPrice(''); setMaxPrice(''); setCityFilter(''); setPage(1) }
+  const clearFilters = () => { setFilters({}); setMinPrice(''); setMaxPrice(''); setCityFilter(''); setAreaSearch(''); setPage(1) }
 
-  const hasActiveFilters = Object.values(filters).some(Boolean) || minPrice || maxPrice || cityFilter
-  const activeCount = Object.values(filters).filter(Boolean).length + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (cityFilter ? 1 : 0)
+  const hasActiveFilters = Object.values(filters).some(Boolean) || minPrice || maxPrice || cityFilter || areaSearch
+  const activeCount = Object.values(filters).filter(Boolean).length + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (cityFilter ? 1 : 0) + (areaSearch ? 1 : 0)
 
   return (
     <div className="page-container" style={{ padding: '32px 20px' }}>
@@ -218,6 +219,19 @@ export default function CategoryPage() {
                     </optgroup>
                   ))}
                 </select>
+              </div>
+              {/* Area search */}
+              <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>Area / Locality</p>
+                <input
+                  type="text"
+                  placeholder="e.g. Gulberg, Phase 2, Cantt..."
+                  value={areaSearch}
+                  onChange={e => { setAreaSearch(e.target.value); setPage(1) }}
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+                />
               </div>
               {/* Dynamic filters */}
               {categoryFilters.map(f => (
@@ -323,6 +337,20 @@ export default function CategoryPage() {
                 </div>
               </div>
             ))}
+
+            {/* Area search */}
+            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+              <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>Area / Locality</p>
+              <input
+                type="text"
+                placeholder="e.g. Gulberg, Phase 2..."
+                value={areaSearch}
+                onChange={e => { setAreaSearch(e.target.value); setPage(1) }}
+                style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box' }}
+                onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
+                onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+              />
+            </div>
 
             {categoryFilters.length === 0 && (
               <p style={{ fontSize: '13px', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", textAlign: 'center', padding: '8px 0' }}>

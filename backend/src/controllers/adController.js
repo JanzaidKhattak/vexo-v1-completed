@@ -30,13 +30,18 @@ const getAds = async (req, res) => {
     }
 
     // City filter — filters by ad.area field (case-insensitive)
-    if (rest.city) {
+    if (rest.city && rest.area) {
+      // Both city and area — search both combined
+      query.area = { $regex: new RegExp(rest.area, 'i') }
+    } else if (rest.city) {
       query.area = { $regex: new RegExp(rest.city, 'i') }
+    } else if (rest.area) {
+      query.area = { $regex: new RegExp(rest.area, 'i') }
     }
 
     // Details filters (brand, make, condition, type, gender, etc.)
     // Any query param that isn't a known system param → treat as details.key
-    const KNOWN = new Set(['category','search','page','limit','sortBy','sort','minPrice','maxPrice','city'])
+    const KNOWN = new Set(['category','search','page','limit','sortBy','sort','minPrice','maxPrice','city','area'])
     Object.entries(rest).forEach(([key, value]) => {
       if (!KNOWN.has(key) && value) {
         query[`details.${key}`] = { $regex: new RegExp(`^${value}$`, 'i') }

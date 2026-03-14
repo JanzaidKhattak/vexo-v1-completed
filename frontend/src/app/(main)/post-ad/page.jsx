@@ -169,6 +169,7 @@ function PostAdPageInner() {
   const [description,    setDescription]    = useState('')
   const [price,          setPrice]          = useState('')
   const [area,           setArea]           = useState('')
+  const [subArea,        setSubArea]        = useState('')
   const [images,         setImages]         = useState([])
   const [previews,       setPreviews]       = useState([])
   const [existingImages, setExistingImages] = useState([])
@@ -219,7 +220,9 @@ function PostAdPageInner() {
       setTitle(ad.title         || '')
       setDescription(ad.description || '')
       setPrice(String(ad.price  || ''))
-      setArea(ad.area           || '')
+      const areaParts = (ad.area || '').split(' - ')
+      setArea(areaParts[0] || '')
+      setSubArea(areaParts[1] || '')
       setDetails(ad.details     || {})
       setExistingImages(ad.images || [])
     } catch (err) {
@@ -269,7 +272,7 @@ function PostAdPageInner() {
       formData.append('description', description)
       formData.append('price',       price)
       formData.append('category',    category)
-      formData.append('area',        area)
+      formData.append('area',        subArea ? `${area} - ${subArea}` : area)
       formData.append('details',     JSON.stringify(details))
       images.forEach(img => formData.append('images', img))
 
@@ -416,7 +419,7 @@ function PostAdPageInner() {
             </div>
             <div>
               <label style={lbl}>City *</label>
-              <select value={area} onChange={e => setArea(e.target.value)}
+              <select value={area} onChange={e => { setArea(e.target.value); setSubArea('') }}
                 style={{ ...inp, appearance: 'auto' }}
                 onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
@@ -432,6 +435,24 @@ function PostAdPageInner() {
               </select>
             </div>
           </div>
+
+          {/* Area/Locality — show after city selected */}
+          {area && (
+            <div style={{ marginTop: '16px' }}>
+              <label style={lbl}>Area / Locality</label>
+              <input
+                value={subArea}
+                onChange={e => setSubArea(e.target.value)}
+                placeholder={`e.g. Phase 2, Gulberg, Cantt, ${area}`}
+                style={inp}
+                onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", marginTop: '4px' }}>
+                Enter your neighbourhood, sector, or street for better reach
+              </p>
+            </div>
+          )}
         </div>
 
         {/* 3 — Category Details */}
