@@ -73,9 +73,10 @@ export default function CategoryPage() {
   const [filters,     setFilters]     = useState({})
   const [minPrice,    setMinPrice]    = useState('')
   const [maxPrice,    setMaxPrice]    = useState('')
-  const [cityFilter,     setCityFilter]     = useState('')
-  const [sidebarOpen,    setSidebarOpen]    = useState(true)
-  const [drawerOpen,     setDrawerOpen]     = useState(false)
+  const [cityFilter,  setCityFilter]  = useState('')
+  const [areaSearch,  setAreaSearch]  = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [drawerOpen,  setDrawerOpen]  = useState(false)
 
   const categoryName = (() => {
     const cat = settings?.categories?.find(c => c.id === slug || c.slug === slug)
