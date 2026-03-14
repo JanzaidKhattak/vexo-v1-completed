@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../lib/axios'
 
 export default function NotificationBell() {
   const { user } = useAuth()
+  const router = useRouter()
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
   const [open, setOpen] = useState(false)
@@ -213,11 +215,12 @@ export default function NotificationBell() {
                 <div
                   key={n._id}
                   className="notif-item"
+                  onClick={() => { if (n.link) { setOpen(false); router.push(n.link) } }}
                   style={{
                     padding: '14px 18px',
                     background: n.isRead ? 'white' : '#FAFAF9',
                     borderBottom: '1px solid #F8FAFC',
-                    cursor: 'pointer', transition: 'background 0.15s',
+                    cursor: n.link ? 'pointer' : 'default', transition: 'background 0.15s',
                     display: 'flex', gap: '12px', alignItems: 'flex-start',
                   }}
                 >
