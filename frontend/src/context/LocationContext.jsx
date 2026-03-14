@@ -1,98 +1,130 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect } from 'react'
-import { ATTOCK_BOUNDS } from '../constants/attockAreas'
+import { ALL_CITIES, DEFAULT_LOCATION } from '../constants/pakistanLocations'
 
 const LocationContext = createContext(null)
 
 export function LocationProvider({ children }) {
-  const [locationStatus, setLocationStatus] = useState('checking')
-  const [userLocation, setUserLocation] = useState(null)
-  const [canAct, setCanAct] = useState(false)
+  const [location, setLocation]       = useState(DEFAULT_LOCATION) // { city, province, isDefault }
+  const [detecting, setDetecting]     = useState(false)
+  const [detected,  setDetected]      = useState(false)
 
   useEffect(() => {
-    // Pehle localStorage check karo
-    const cached = localStorage.getItem('vexo_location')
-    if (cached) {
-      const { status, canAct: ca } = JSON.parse(cached)
-      setLocationStatus(status)
-      setCanAct(ca)
-      return
-    }
-    checkLocation()
+    // Load saved location from localStorage
+    try {
+      const saved = localStorage.getItem('vexo_location_v2')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setLocation(parsed)
+        setDetected(true)
+        return
+      }
+    } catch {}
+    // First visit — auto detect
+    autoDetect()
   }, [])
 
-  const isInAttockBounds = (lat, lng) => {
-    return (
-      lat >= ATTOCK_BOUNDS.south &&
-      lat <= ATTOCK_BOUNDS.north &&
-      lng >= ATTOCK_BOUNDS.west &&
-      lng <= ATTOCK_BOUNDS.east
-    )
+  const saveLocation = (loc) => {
+    setLocation(loc)
+    try { localStorage.setItem('vexo_location_v2', JSON.stringify(loc)) } catch {}
   }
 
-  const saveToCache = (status, ca) => {
-    localStorage.setItem('vexo_location', JSON.stringify({ status, canAct: ca }))
-  }
-
-  const checkLocation = () => {
-    setLocationStatus('checking')
-
+  const autoDetect = () => {
+    setDetecting(true)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords
-          setUserLocation({ lat: latitude, lng: longitude })
-          if (isInAttockBounds(latitude, longitude)) {
-            setLocationStatus('attock')
-            setCanAct(true)
-            saveToCache('attock', true)
-          } else {
-            setLocationStatus('outside')
-            setCanAct(false)
-            saveToCache('outside', false)
-          }
-        },
-        () => {
-          checkByIP()
-        }
+        (pos) => reverseGeocode(pos.coords.latitude, pos.coords.longitude),
+        () => detectByIP()
       )
     } else {
-      checkByIP()
+      detectByIP()
     }
   }
 
-  const checkByIP = async () => {
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      )
+      const data = await res.json()
+      const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county
+      if (city) {
+        // Try to match with our city list
+        const matched = ALL_CITIES.find(c =>
+          c.city.toLowerCase() === city.toLowerCase() ||
+          city.toLowerCase().includes(c.city.toLowerCase())
+        )
+        if (matched) {
+          saveLocation({ city: matched.city, province: matched.province, isDefault: false })
+          setDetected(true)
+          setDetecting(false)
+          return
+        }
+      }
+      // City not in list — just save what we got
+      if (city) {
+        saveLocation({ city, province: data.address?.state || null, isDefault: false })
+        setDetected(true)
+      } else {
+        saveLocation(DEFAULT_LOCATION)
+      }
+    } catch {
+      detectByIP()
+    } finally {
+      setDetecting(false)
+    }
+  }
+
+  const detectByIP = async () => {
     try {
       const res = await fetch('https://ipapi.co/json/')
       const data = await res.json()
-      if (
-        data.city?.toLowerCase().includes('attock') ||
-        data.region?.toLowerCase().includes('attock') ||
-        (data.latitude && data.longitude &&
-          isInAttockBounds(data.latitude, data.longitude))
-      ) {
-        setLocationStatus('attock')
-        setCanAct(true)
-        saveToCache('attock', true)
+      const city = data.city
+      if (city) {
+        const matched = ALL_CITIES.find(c =>
+          c.city.toLowerCase() === city.toLowerCase() ||
+          city.toLowerCase().includes(c.city.toLowerCase())
+        )
+        if (matched) {
+          saveLocation({ city: matched.city, province: matched.province, isDefault: false })
+          setDetected(true)
+          setDetecting(false)
+          return
+        }
+        saveLocation({ city, province: data.region || null, isDefault: false })
+        setDetected(true)
       } else {
-        setLocationStatus('outside')
-        setCanAct(false)
-        saveToCache('outside', false)
+        saveLocation(DEFAULT_LOCATION)
       }
     } catch {
-      setLocationStatus('attock')
-      setCanAct(true)
-      saveToCache('attock', true)
+      saveLocation(DEFAULT_LOCATION)
+    } finally {
+      setDetecting(false)
     }
+  }
+
+  const changeLocation = (city, province) => {
+    if (!city || city === 'Pakistan') {
+      saveLocation(DEFAULT_LOCATION)
+    } else {
+      saveLocation({ city, province: province || null, isDefault: false })
+    }
+  }
+
+  const resetLocation = () => {
+    saveLocation(DEFAULT_LOCATION)
+    try { localStorage.removeItem('vexo_location_v2') } catch {}
   }
 
   return (
     <LocationContext.Provider value={{
-      locationStatus,
-      userLocation,
-      canAct,
-      checkLocation,
+      location,
+      detecting,
+      detected,
+      autoDetect,
+      changeLocation,
+      resetLocation,
     }}>
       {children}
     </LocationContext.Provider>

@@ -7,7 +7,170 @@ import { useAuth } from "../../context/AuthContext";
 import { CATEGORIES } from "../../constants/categories";
 import NotificationBell from "../notifications/NotificationBell";
 import { useSiteSettings } from "../../context/SiteSettingsContext";
+import { useLocation } from "../../context/LocationContext";
+import { PAKISTAN_LOCATIONS } from "../../constants/pakistanLocations";
 import toast from "react-hot-toast";
+
+// ── Location Picker ───────────────────────────────────────────────────────────
+function LocationPicker() {
+  const { location, changeLocation, detecting } = useLocation()
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  const label = detecting ? "Detecting..." : (location?.isDefault ? "Pakistan" : location?.city)
+
+  const filtered = search.trim()
+    ? PAKISTAN_LOCATIONS.flatMap(p =>
+        p.cities
+          .filter(c => c.toLowerCase().includes(search.toLowerCase()))
+          .map(c => ({ city: c, province: p.province }))
+      ).slice(0, 20)
+    : null
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", gap: "5px",
+          padding: "6px 10px", background: "var(--bg-secondary)",
+          border: "1px solid var(--border-default)", borderRadius: "8px",
+          cursor: "pointer", flexShrink: 0, transition: "all 0.15s",
+          maxWidth: "130px",
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "var(--brand-primary)"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border-default)"}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span style={{
+          fontSize: "13px", fontWeight: "600", color: "var(--text-secondary)",
+          fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap",
+          overflow: "hidden", textOverflow: "ellipsis",
+        }}>{label}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0 }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 199 }} />
+          <div style={{
+            position: "absolute", top: "44px", left: 0,
+            width: "280px", background: "white", borderRadius: "14px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.12)", border: "1px solid #F1F5F9",
+            zIndex: 200, overflow: "hidden",
+          }}>
+            {/* Search */}
+            <div style={{ padding: "12px 12px 8px" }}>
+              <input
+                autoFocus
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search city..."
+                style={{
+                  width: "100%", padding: "9px 12px",
+                  border: "1.5px solid #E2E8F0", borderRadius: "8px",
+                  fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
+                  outline: "none", boxSizing: "border-box",
+                }}
+                onFocus={e => e.target.style.borderColor = "var(--brand-primary)"}
+                onBlur={e => e.target.style.borderColor = "#E2E8F0"}
+              />
+            </div>
+
+            <div style={{ maxHeight: "320px", overflowY: "auto" }}>
+              {/* All Pakistan option */}
+              <button
+                onClick={() => { changeLocation(null); setOpen(false); setSearch("") }}
+                style={{
+                  width: "100%", padding: "10px 14px", textAlign: "left",
+                  background: location?.isDefault ? "#EDE9FE" : "transparent",
+                  color: location?.isDefault ? "var(--brand-primary)" : "#374151",
+                  border: "none", cursor: "pointer", fontSize: "13px",
+                  fontWeight: location?.isDefault ? "700" : "500",
+                  fontFamily: "'DM Sans', sans-serif",
+                  borderBottom: "1px solid #F8FAFC",
+                  display: "flex", alignItems: "center", gap: "8px",
+                }}
+              >
+                <span style={{ fontSize: "16px" }}>🇵🇰</span> All Pakistan
+              </button>
+
+              {/* Search results or province list */}
+              {filtered ? (
+                filtered.length === 0 ? (
+                  <p style={{ padding: "16px", textAlign: "center", color: "#94A3B8", fontSize: "13px", fontFamily: "'DM Sans', sans-serif" }}>
+                    No city found
+                  </p>
+                ) : (
+                  filtered.map(({ city, province }) => (
+                    <button key={city}
+                      onClick={() => { changeLocation(city, province); setOpen(false); setSearch("") }}
+                      style={{
+                        width: "100%", padding: "9px 14px", textAlign: "left",
+                        background: location?.city === city ? "#EDE9FE" : "transparent",
+                        color: location?.city === city ? "var(--brand-primary)" : "#374151",
+                        border: "none", cursor: "pointer", fontSize: "13px",
+                        fontWeight: location?.city === city ? "700" : "400",
+                        fontFamily: "'DM Sans', sans-serif",
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                      }}
+                      onMouseEnter={e => { if (location?.city !== city) e.currentTarget.style.background = "#F8FAFC" }}
+                      onMouseLeave={e => { if (location?.city !== city) e.currentTarget.style.background = "transparent" }}
+                    >
+                      {city}
+                      <span style={{ fontSize: "11px", color: "#94A3B8" }}>{province}</span>
+                    </button>
+                  ))
+                )
+              ) : (
+                PAKISTAN_LOCATIONS.map(p => (
+                  <div key={p.province}>
+                    <p style={{
+                      padding: "8px 14px 4px", fontSize: "10px", fontWeight: "700",
+                      color: "#94A3B8", fontFamily: "'DM Sans', sans-serif",
+                      textTransform: "uppercase", letterSpacing: "0.06em",
+                      background: "#F8FAFC",
+                    }}>{p.province}</p>
+                    {p.cities.map(city => (
+                      <button key={city}
+                        onClick={() => { changeLocation(city, p.province); setOpen(false); setSearch("") }}
+                        style={{
+                          width: "100%", padding: "8px 14px", textAlign: "left",
+                          background: location?.city === city ? "#EDE9FE" : "transparent",
+                          color: location?.city === city ? "var(--brand-primary)" : "#374151",
+                          border: "none", cursor: "pointer", fontSize: "13px",
+                          fontWeight: location?.city === city ? "700" : "400",
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}
+                        onMouseEnter={e => { if (location?.city !== city) e.currentTarget.style.background = "#F8FAFC" }}
+                        onMouseLeave={e => { if (location?.city !== city) e.currentTarget.style.background = "transparent" }}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 function UserDropdown({ user, onLogout }) {
   const [open, setOpen] = useState(false);
@@ -294,6 +457,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const [query, setQuery] = useState("");
   const [mobileSearch, setMobileSearch] = useState(false);
+  const [showMobileLocation, setShowMobileLocation] = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -370,17 +534,9 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Attock badge */}
-        <div className="hide-mobile" style={{
-          display: "flex", alignItems: "center", gap: "6px",
-          padding: "6px 12px", background: "var(--bg-secondary)",
-          border: "1px solid var(--border-default)", borderRadius: "8px",
-          cursor: "pointer", flexShrink: 0,
-        }}>
-          <span style={{
-            fontSize: "13px", fontWeight: "500",
-            color: "var(--text-secondary)", fontFamily: "'DM Sans', sans-serif",
-          }}>Attock</span>
+        {/* Location Picker */}
+        <div className="hide-mobile">
+          <LocationPicker />
         </div>
 
         {/* Search */}

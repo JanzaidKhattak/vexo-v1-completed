@@ -10,6 +10,7 @@ import AdBannerSlot from '../../components/home/AdBannerSlot'
 import api from '../../lib/axios'
 import Link from 'next/link'
 import { useSiteSettings } from '../../context/SiteSettingsContext'
+import { useLocation } from '../../context/LocationContext'
 
 function SectionHeader({ title, subtitle, href }) {
   return (
@@ -47,17 +48,21 @@ function SectionHeader({ title, subtitle, href }) {
 
 export default function HomePage() {
   const { settings } = useSiteSettings()
+  const { location } = useLocation()
   const [trendingAds, setTrendingAds] = useState([])
   const [recentAds,   setRecentAds]   = useState([])
   const [loading,     setLoading]     = useState(true)
 
-  useEffect(() => { fetchAds() }, [])
+  useEffect(() => { fetchAds() }, [location])
 
   const fetchAds = async () => {
     try {
+      const cityParam = (!location?.isDefault && location?.city)
+        ? `&city=${encodeURIComponent(location.city)}`
+        : ''
       const [trendingRes, recentRes] = await Promise.all([
-        api.get('/ads/trending'),
-        api.get('/ads/recent?limit=50'),
+        api.get(`/ads/trending?${cityParam}`),
+        api.get(`/ads/recent?limit=50${cityParam}`),
       ])
       setTrendingAds(trendingRes.data.ads)
       setRecentAds(recentRes.data.ads)

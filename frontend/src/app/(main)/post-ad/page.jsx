@@ -1,599 +1,271 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuth } from '../../../context/AuthContext'
-import api from '../../../lib/axios'
-import toast from 'react-hot-toast'
-import MobileForm from '../../../components/forms/MobileForm'
-import CarForm from '../../../components/forms/CarForm'
-import MotorcycleForm from '../../../components/forms/MotorcycleForm'
-import ElectronicsForm from '../../../components/forms/ElectronicsForm'
-import FurnitureForm from '../../../components/forms/FurnitureForm'
-import FashionForm from '../../../components/forms/FashionForm'
-import OthersForm from '../../../components/forms/OthersForm'
-import PropertyForSellForm from '../../../components/forms/PropertyForSellForm'
-import PropertyForRentForm from '../../../components/forms/PropertyForRentForm'
-import { useSiteSettings } from '../../../context/SiteSettingsContext'
-import { Suspense } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import api from '../../../../lib/axios'
+import AdCard from '../../../../components/ads/AdCard'
+import { useSiteSettings } from '../../../../context/SiteSettingsContext'
+import { useLocation } from '../../../../context/LocationContext'
 
-// Known category → dedicated form mapping
-const FORM_MAP = {
-  mobiles:      MobileForm,
-  cars:         CarForm,
-  motorcycles:  MotorcycleForm,
-  electronics:  ElectronicsForm,
-  furniture:    FurnitureForm,
-  'furniture-home': FurnitureForm,
-  fashion:      FashionForm,
-  'fashion-beauty': FashionForm,
-  others:             OthersForm,
-  'property-for-sell': PropertyForSellForm,
-  'property-for-rent': PropertyForRentForm,
+const CATEGORY_FILTERS = {
+  mobiles: [
+    { key: 'brand',     label: 'Brand',     options: ['Samsung', 'Apple', 'Xiaomi', 'Oppo', 'Vivo', 'Realme', 'Nokia', 'Other'] },
+    { key: 'condition', label: 'Condition', options: ['New', 'Like New', 'Good', 'Fair'] },
+  ],
+  cars: [
+    { key: 'make',         label: 'Make',         options: ['Suzuki', 'Toyota', 'Honda', 'Kia', 'Hyundai', 'Daihatsu', 'Other'] },
+    { key: 'transmission', label: 'Transmission', options: ['Manual', 'Automatic'] },
+    { key: 'condition',    label: 'Condition',    options: ['Excellent', 'Good', 'Fair'] },
+  ],
+  motorcycles: [
+    { key: 'brand',     label: 'Brand',     options: ['Honda', 'Yamaha', 'Suzuki', 'United', 'Road Prince', 'Ravi', 'Super Power', 'Other'] },
+    { key: 'condition', label: 'Condition', options: ['New', 'Like New', 'Good', 'Fair'] },
+  ],
+  electronics: [
+    { key: 'type',      label: 'Type',      options: ['TV', 'AC', 'Fridge', 'Washing Machine', 'Laptop', 'Camera', 'Other'] },
+    { key: 'condition', label: 'Condition', options: ['New', 'Like New', 'Good', 'Fair'] },
+  ],
+  'furniture-home': [
+    { key: 'type',      label: 'Type',      options: ['Sofa', 'Bed', 'Wardrobe', 'Dining Table', 'Chair', 'Other'] },
+    { key: 'condition', label: 'Condition', options: ['New', 'Like New', 'Good', 'Fair'] },
+  ],
+  furniture: [
+    { key: 'type',      label: 'Type',      options: ['Sofa', 'Bed', 'Wardrobe', 'Dining Table', 'Chair', 'Other'] },
+    { key: 'condition', label: 'Condition', options: ['New', 'Like New', 'Good', 'Fair'] },
+  ],
+  'fashion-beauty': [
+    { key: 'gender',    label: 'For',       options: ['Men', 'Women', 'Kids', 'Unisex'] },
+    { key: 'condition', label: 'Condition', options: ['New with Tags', 'New', 'Like New', 'Good'] },
+  ],
+  fashion: [
+    { key: 'gender',    label: 'For',       options: ['Men', 'Women', 'Kids', 'Unisex'] },
+    { key: 'condition', label: 'Condition', options: ['New with Tags', 'New', 'Like New', 'Good'] },
+  ],
+  'property-for-sell': [
+    { key: 'type',      label: 'Property Type', options: ['Land & Plot', 'House', 'Apartment & Flat', 'Shop', 'Office', 'Commercial Space', 'Farm House'] },
+    { key: 'bedrooms',  label: 'Bedrooms',      options: ['Studio', '1', '2', '3', '4', '5', '6+'] },
+    { key: 'furnishing',label: 'Furnishing',    options: ['Furnished', 'Semi-Furnished', 'Unfurnished'] },
+    { key: 'condition', label: 'Condition',     options: ['New / Under Construction', 'Ready to Move', 'Old'] },
+  ],
+  'property-for-rent': [
+    { key: 'type',      label: 'Property Type', options: ['House', 'Apartment & Flat', 'Room', 'Shop', 'Office', 'Commercial Space', 'Warehouse'] },
+    { key: 'bedrooms',  label: 'Bedrooms',      options: ['Studio', '1', '2', '3', '4', '5', '6+'] },
+    { key: 'furnishing',label: 'Furnishing',    options: ['Furnished', 'Semi-Furnished', 'Unfurnished'] },
+    { key: 'rentPer',   label: 'Rent Per',      options: ['Monthly', 'Yearly'] },
+  ],
+  others: [],
 }
 
-// Phone Number Modal
-function PhoneModal({ onSave, onClose }) {
-  const [phone, setPhone] = useState('')
-  const [saving, setSaving] = useState(false)
-  const { updateUser } = useAuth()
+const LIMIT = 10
 
-  const handleSave = async () => {
-    if (!phone || phone.length < 10) {
-      toast.error('Please enter a valid phone number')
-      return
-    }
-    setSaving(true)
-    try {
-      const formData = new FormData()
-      formData.append('phone', phone)
-      const res = await api.put('/users/profile', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      updateUser(res.data.user)
-      toast.success('Phone number saved!')
-      onSave(phone)
-    } catch {
-      toast.error('Failed to save phone number')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '20px',
-    }}>
-      <div style={{
-        background: 'white', borderRadius: '20px',
-        padding: '36px 32px', width: '100%', maxWidth: '420px',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
-        animation: 'modalIn 0.3s ease',
-      }}>
-        <style>{`
-          @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-          }
-        `}</style>
-
-        <div style={{
-          width: '56px', height: '56px', borderRadius: '16px',
-          background: 'linear-gradient(135deg, #6C3AF5, #9B6DFF)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '26px', marginBottom: '20px',
-        }}>📞</div>
-
-        <h2 style={{
-          fontSize: '22px', fontWeight: '800', fontFamily: 'Inter, sans-serif',
-          color: '#111827', marginBottom: '8px', letterSpacing: '-0.02em',
-        }}>Add Phone Number</h2>
-        <p style={{
-          fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif',
-          marginBottom: '24px', lineHeight: '1.6',
-        }}>
-          Buyers will contact you on this number. A valid phone number is required to post ads.
-        </p>
-
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{
-            display: 'block', fontSize: '13px', fontWeight: '600',
-            color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '8px',
-          }}>Pakistani Mobile Number</label>
-          <div style={{ position: 'relative' }}>
-            <span style={{
-              position: 'absolute', left: '14px', top: '50%',
-              transform: 'translateY(-50%)',
-              fontSize: '14px', color: '#6B7280',
-              fontFamily: 'Inter, sans-serif', fontWeight: '600',
-            }}>+92</span>
-            <input
-              value={phone}
-              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-              placeholder="03001234567"
-              style={{
-                width: '100%', padding: '12px 14px 12px 48px',
-                border: '1.5px solid #E5E7EB', borderRadius: '10px',
-                fontSize: '15px', fontFamily: 'Inter, sans-serif',
-                outline: 'none', boxSizing: 'border-box',
-                letterSpacing: '1px', fontWeight: '600',
-              }}
-              onFocus={e => e.target.style.borderColor = '#6C3AF5'}
-              onBlur={e => e.target.style.borderColor = '#E5E7EB'}
-            />
-          </div>
-          <p style={{ fontSize: '12px', color: '#9CA3AF', fontFamily: 'Inter, sans-serif', marginTop: '6px' }}>
-            This will be saved to your profile and visible to buyers
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={onClose} style={{
-            flex: 1, padding: '12px',
-            border: '1.5px solid #E5E7EB', borderRadius: '10px',
-            background: 'white', color: '#374151',
-            fontSize: '14px', fontWeight: '600',
-            fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-          }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{
-            flex: 2, padding: '12px',
-            background: 'linear-gradient(135deg, #6C3AF5, #9B6DFF)',
-            border: 'none', borderRadius: '10px',
-            color: 'white', fontSize: '14px', fontWeight: '700',
-            fontFamily: 'Inter, sans-serif',
-            cursor: saving ? 'not-allowed' : 'pointer',
-            opacity: saving ? 0.7 : 1,
-          }}>
-            {saving ? 'Saving...' : 'Save & Continue →'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PostAdPageInner() {
-  const { user } = useAuth()
+export default function CategoryPage() {
+  const { slug } = useParams()
   const { settings } = useSiteSettings()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const editId   = searchParams.get('edit')
-  const isEditMode = !!editId
+  const { location } = useLocation()
 
-  const [category,       setCategory]       = useState('')
-  const [title,          setTitle]          = useState('')
-  const [description,    setDescription]    = useState('')
-  const [price,          setPrice]          = useState('')
-  const [area,           setArea]           = useState('')
-  const [images,         setImages]         = useState([])
-  const [previews,       setPreviews]       = useState([])
-  const [existingImages, setExistingImages] = useState([])
-  const [details,        setDetails]        = useState({})
-  const [loading,        setLoading]        = useState(false)
-  const [fetching,       setFetching]       = useState(false)
-  const [authChecked,    setAuthChecked]    = useState(false)
-  const [showPhoneModal, setShowPhoneModal] = useState(false)
+  const [ads,         setAds]         = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [total,       setTotal]       = useState(0)
+  const [page,        setPage]        = useState(1)
+  const [sortBy,      setSortBy]      = useState('createdAt')
+  const [filters,     setFilters]     = useState({})
+  const [minPrice,    setMinPrice]    = useState('')
+  const [maxPrice,    setMaxPrice]    = useState('')
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  // Build category list from settings (active ones) — fallback to hardcoded
-  const categoryList = (() => {
-    const cats = settings?.categories?.filter(c => c.isActive)
-    if (cats && cats.length > 0) return cats
-    // fallback
-    return [
-      { id: 'mobiles',      name: 'Mobiles',         icon: '📱' },
-      { id: 'cars',         name: 'Cars',            icon: '🚗' },
-      { id: 'motorcycles',  name: 'Motorcycles',     icon: '🏍️' },
-      { id: 'electronics',  name: 'Electronics',     icon: '💻' },
-      { id: 'furniture',    name: 'Furniture & Home',icon: '🛋️' },
-      { id: 'fashion',      name: 'Fashion & Beauty',icon: '👗' },
-      { id: 'others',       name: 'Others',          icon: '📦' },
-    ]
+  const categoryName = (() => {
+    const cat = settings?.categories?.find(c => c.id === slug || c.slug === slug)
+    if (cat) return cat.name
+    return slug?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   })()
 
-  // Get the right form component — known categories get dedicated form,
-  // admin-added categories get OthersForm as fallback
-  const CategoryForm = category
-    ? (FORM_MAP[category] || OthersForm)
-    : null
+  const categoryFilters = CATEGORY_FILTERS[slug] || []
+  const totalPages = Math.ceil(total / LIMIT)
 
-  useEffect(() => {
-    setAuthChecked(true)
-    if (!user) { router.push('/login'); return }
-    if (user && !user.phone) setShowPhoneModal(true)
-  }, [user])
-
-  useEffect(() => {
-    if (isEditMode && editId) fetchAdData()
-  }, [editId])
-
-  const fetchAdData = async () => {
-    setFetching(true)
-    try {
-      const res = await api.get(`/ads/${editId}`)
-      const ad  = res.data.ad
-      setCategory(ad.category   || '')
-      setTitle(ad.title         || '')
-      setDescription(ad.description || '')
-      setPrice(String(ad.price  || ''))
-      setArea(ad.area           || '')
-      setDetails(ad.details     || {})
-      setExistingImages(ad.images || [])
-    } catch (err) {
-      console.error(err)
-      toast.error('Failed to load ad data')
-    } finally {
-      setFetching(false)
-    }
-  }
-
-  const handleImageChange = (e) => {
-    const newFiles = Array.from(e.target.files)
-    const combined = [...images, ...newFiles].slice(0, 5)
-    setImages(combined)
-    setPreviews(combined.map(f => URL.createObjectURL(f)))
-  }
-
-  const handleRemoveImage = (idx) => {
-    const newImages = images.filter((_, i) => i !== idx)
-    const newPreviews = previews.filter((_, i) => i !== idx)
-    setImages(newImages)
-    setPreviews(newPreviews)
-  }
-
-  const handleSetMainImage = (idx) => {
-    // Move selected image to index 0
-    const newImages = [...images]
-    const newPreviews = [...previews]
-    const [imgItem] = newImages.splice(idx, 1)
-    const [prevItem] = newPreviews.splice(idx, 1)
-    newImages.unshift(imgItem)
-    newPreviews.unshift(prevItem)
-    setImages(newImages)
-    setPreviews(newPreviews)
-  }
-
-  const handleSubmit = async () => {
-    if (!user?.phone) { setShowPhoneModal(true); return }
-    if (!title || !price || !category) {
-      toast.error('Please fill all required fields')
-      return
-    }
+  const fetchAds = useCallback(async () => {
     setLoading(true)
     try {
-      const formData = new FormData()
-      formData.append('title',       title)
-      formData.append('description', description)
-      formData.append('price',       price)
-      formData.append('category',    category)
-      formData.append('area',        area)
-      formData.append('details',     JSON.stringify(details))
-      images.forEach(img => formData.append('images', img))
-
-      if (isEditMode) {
-        await api.put(`/ads/${editId}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-        toast.success('Ad updated! It will be reviewed again before going live.', { duration: 5000 })
-      } else {
-        await api.post('/ads', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-        toast.success('Ad posted! It will be active within 24 hours after review.', { duration: 5000 })
-      }
-      router.push('/profile')
+      const params = new URLSearchParams({ category: slug, page, limit: LIMIT, sortBy })
+      if (!location?.isDefault && location?.city) params.append('city', location.city)
+      if (minPrice) params.append('minPrice', minPrice)
+      if (maxPrice) params.append('maxPrice', maxPrice)
+      Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, v) })
+      const res = await api.get(`/ads?${params}`)
+      setAds(res.data.ads)
+      setTotal(res.data.pagination?.total || 0)
     } catch (err) {
       console.error(err)
-      toast.error(isEditMode ? 'Failed to update ad' : 'Failed to post ad')
     } finally {
       setLoading(false)
     }
+  }, [slug, page, sortBy, filters, minPrice, maxPrice, location])
+
+  useEffect(() => { fetchAds() }, [fetchAds])
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value === prev[key] ? '' : value }))
+    setPage(1)
   }
 
-  if (!authChecked || !user) return null
-  if (fetching) return (
-    <div className="page-container" style={{ padding: '32px 20px', textAlign: 'center' }}>
-      <p style={{ fontFamily: 'Inter, sans-serif', color: 'var(--text-muted)' }}>Loading ad data...</p>
-    </div>
-  )
+  const clearFilters = () => { setFilters({}); setMinPrice(''); setMaxPrice(''); setPage(1) }
 
-  const inp = {
-    width: '100%', padding: '10px 14px',
-    border: '1.5px solid var(--border-default)',
-    borderRadius: '8px', fontSize: '14px',
-    fontFamily: 'Inter, sans-serif', outline: 'none',
-    boxSizing: 'border-box',
-  }
-  const lbl = {
-    display: 'block', fontSize: '13px', fontWeight: '600',
-    marginBottom: '6px', fontFamily: 'Inter, sans-serif',
-  }
-  const cardStyle = {
-    background: 'white', borderRadius: '16px', padding: '24px',
-    marginBottom: '20px', border: '1px solid var(--border-default)',
-  }
+  const hasActiveFilters = Object.values(filters).some(Boolean) || minPrice || maxPrice
+  const activeCount = Object.values(filters).filter(Boolean).length + (minPrice ? 1 : 0) + (maxPrice ? 1 : 0)
 
   return (
     <div className="page-container" style={{ padding: '32px 20px' }}>
+      <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
 
-      {showPhoneModal && (
-        <PhoneModal
-          onSave={() => setShowPhoneModal(false)}
-          onClose={() => { setShowPhoneModal(false); router.push('/profile') }}
-        />
-      )}
-
-      <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '800', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px' }}>
-          {isEditMode ? 'Edit Ad' : 'Post an Ad'}
+      {/* Breadcrumb + Header */}
+      <div style={{ marginBottom: '24px' }}>
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ fontSize: '13px', fontWeight: '500', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", textDecoration: 'none', transition: 'color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#6C3AF5'}
+            onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
+          >Home</Link>
+          <span style={{ color: '#CBD5E1', fontSize: '13px' }}>/</span>
+          <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif" }}>{categoryName}</span>
+        </div>
+        <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em', marginBottom: '4px' }}>
+          {categoryName}
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", marginBottom: '32px', fontSize: '14px' }}>
-          {isEditMode
-            ? 'Update your ad details. It will go for review again after saving.'
-            : 'Sell anything in Attock for free'}
+        <p style={{ color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
+          {loading ? 'Loading...' : `${total} ads in ${location?.isDefault ? 'Pakistan' : location?.city || 'Pakistan'}`}
         </p>
+      </div>
 
-        {/* 1 — Category */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px' }}>
-            1. Select Category *
-          </h2>
-          <div className="post-ad-category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
-            {categoryList.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  if (isEditMode) return
-                  setCategory(cat.id)
-                  setDetails({}) // reset details on category change
-                }}
-                style={{
-                  padding: '12px 8px',
-                  border: `2px solid ${category === cat.id ? 'var(--brand-primary)' : 'var(--border-default)'}`,
-                  borderRadius: '10px',
-                  background: category === cat.id ? 'var(--brand-light, #F0EBFF)' : 'white',
-                  color: category === cat.id ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                  fontSize: '13px', fontWeight: '600',
-                  fontFamily: "'DM Sans', sans-serif",
-                  cursor: isEditMode ? 'not-allowed' : 'pointer',
-                  textAlign: 'center', transition: 'all 0.15s',
-                  opacity: isEditMode && category !== cat.id ? 0.5 : 1,
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', gap: '6px',
-                }}
-              >
-                {/* Show uploaded icon or emoji */}
-                {cat.iconUrl ? (
-                  <img src={cat.iconUrl} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-                ) : (
-                  <span style={{ fontSize: '20px' }}>{cat.icon || '📦'}</span>
-                )}
-                {cat.name}
-              </button>
-            ))}
-          </div>
-          {isEditMode && (
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", marginTop: '10px' }}>
-              Category cannot be changed while editing.
-            </p>
-          )}
-        </div>
+      <div className="filter-layout" style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
 
-        {/* 2 — Basic Info */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px' }}>
-            2. Basic Information
-          </h2>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={lbl}>Title *</label>
-            <input value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="e.g. Samsung Galaxy A54 — 8GB/256GB" maxLength={100}
-              style={inp}
-              onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
-            />
-          </div>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={lbl}>Description</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)}
-              placeholder="Describe your item..." rows={4}
-              style={{ ...inp, resize: 'vertical' }}
-              onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
-            />
-          </div>
-          <div className='post-ad-fields-grid' style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={lbl}>Price (Rs) *</label>
-              <input type="number" value={price} onChange={e => setPrice(e.target.value)}
-                placeholder="e.g. 75000" style={inp}
-                onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
-              />
+        {/* Sidebar */}
+        <div className="filter-sidebar" style={{ width: sidebarOpen ? '240px' : '0px', minWidth: sidebarOpen ? '240px' : '0px', overflow: 'hidden', transition: 'all 0.3s ease', flexShrink: 0 }}>
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '20px', position: 'sticky', top: '20px' }}>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", color: '#0f172a' }}>Filters</h3>
+              {hasActiveFilters && (
+                <button onClick={clearFilters} style={{ fontSize: '12px', fontWeight: '600', color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                  Clear All
+                </button>
+              )}
             </div>
-            <div>
-              <label style={lbl}>Area</label>
-              <input value={area} onChange={e => setArea(e.target.value)}
-                placeholder="e.g. Attock City" style={inp}
-                onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* 3 — Category Details */}
-        {CategoryForm && (
-          <div style={cardStyle}>
-            <h2 style={{ fontSize: '16px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginBottom: '16px' }}>
-              3. Category Details
-            </h2>
-            <CategoryForm data={details} onChange={setDetails} />
-          </div>
-        )}
-
-        {/* 4 — Photos */}
-        <div style={cardStyle}>
-          <style>{`
-            .img-thumb:hover .img-remove { opacity: 1 !important; }
-            .img-thumb:hover .img-main-btn { opacity: 1 !important; }
-          `}</style>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif" }}>
-              4. Photos ({previews.length}/5)
-            </h2>
-            {previews.length > 0 && (
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>
-                First image = main photo
-              </span>
-            )}
-          </div>
-
-          {/* Existing images in edit mode */}
-          {isEditMode && existingImages.length > 0 && previews.length === 0 && (
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                Current Photos:
-              </p>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {existingImages.map((img, i) => (
-                  <img key={i} src={img} alt="" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-default)' }} />
+            {/* Price */}
+            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+              <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>Price Range (Rs)</p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[['Min', minPrice, setMinPrice], ['Max', maxPrice, setMaxPrice]].map(([label, val, setter]) => (
+                  <input key={label} type="number" placeholder={label} value={val}
+                    onChange={e => setter(e.target.value)}
+                    onBlur={() => setPage(1)}
+                    style={{ flex: 1, padding: '8px 10px', border: '1.5px solid #E2E8F0', borderRadius: '8px', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--brand-primary)'}
+                  />
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Image previews with remove + main */}
-          {previews.length > 0 && (
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-              {previews.map((p, i) => (
-                <div key={i} className="img-thumb" style={{ position: 'relative', width: '90px', height: '90px', flexShrink: 0 }}>
-                  <img src={p} alt="" style={{
-                    width: '100%', height: '100%',
-                    objectFit: 'cover', borderRadius: '10px',
-                    border: i === 0 ? '2.5px solid var(--brand-primary)' : '1.5px solid var(--border-default)',
-                  }} />
-
-                  {/* Main badge */}
-                  {i === 0 && (
-                    <div style={{
-                      position: 'absolute', bottom: '4px', left: '4px',
-                      background: 'var(--brand-primary)', color: 'white',
-                      fontSize: '9px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
-                      padding: '2px 5px', borderRadius: '4px',
-                    }}>MAIN</div>
-                  )}
-
-                  {/* Remove button */}
-                  <button
-                    className="img-remove"
-                    onClick={() => handleRemoveImage(i)}
-                    style={{
-                      position: 'absolute', top: '-6px', right: '-6px',
-                      width: '20px', height: '20px', borderRadius: '50%',
-                      background: '#EF4444', color: 'white', border: '2px solid white',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontSize: '11px', fontWeight: '800',
-                      opacity: 0, transition: 'opacity 0.15s', zIndex: 2,
-                      lineHeight: 1, padding: 0,
-                    }}
-                  >✕</button>
-
-                  {/* Set as main button (not for index 0) */}
-                  {i !== 0 && (
-                    <button
-                      className="img-main-btn"
-                      onClick={() => handleSetMainImage(i)}
-                      title="Set as main photo"
-                      style={{
-                        position: 'absolute', bottom: '4px', left: '4px',
-                        background: 'rgba(0,0,0,0.65)', color: 'white',
-                        fontSize: '9px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
-                        padding: '2px 5px', borderRadius: '4px',
-                        border: 'none', cursor: 'pointer',
-                        opacity: 0, transition: 'opacity 0.15s', zIndex: 2,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >Set Main</button>
-                  )}
+            {/* Dynamic filters */}
+            {categoryFilters.map(f => (
+              <div key={f.key} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #F1F5F9' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: "'DM Sans', sans-serif", marginBottom: '10px' }}>{f.label}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {f.options.map(opt => (
+                    <button key={opt} onClick={() => handleFilterChange(f.key, opt)} style={{
+                      padding: '7px 12px', borderRadius: '8px', textAlign: 'left',
+                      fontSize: '13px', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
+                      fontWeight: filters[f.key] === opt ? '600' : '400',
+                      background: filters[f.key] === opt ? 'var(--brand-primary)' : '#F8FAFC',
+                      color: filters[f.key] === opt ? 'white' : '#374151',
+                      border: filters[f.key] === opt ? 'none' : '1px solid #E2E8F0',
+                      transition: 'all 0.15s',
+                    }}>{opt}</button>
+                  ))}
                 </div>
-              ))}
+              </div>
+            ))}
 
-              {/* Add more button if less than 5 */}
-              {previews.length < 5 && (
-                <label style={{
-                  width: '90px', height: '90px', flexShrink: 0,
-                  border: '2px dashed var(--border-default)', borderRadius: '10px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  justifyContent: 'center', cursor: 'pointer',
-                  background: 'var(--bg-secondary)', transition: 'border-color 0.15s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-                >
-                  <span style={{ fontSize: '22px' }}>+</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif" }}>Add</span>
-                  <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: 'none' }} />
-                </label>
+            {categoryFilters.length === 0 && (
+              <p style={{ fontSize: '13px', color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", textAlign: 'center', padding: '8px 0' }}>
+                Use price range to filter
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Main */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* Toolbar */}
+          <div className="filter-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+              padding: '8px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: '600',
+              fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
+              background: 'white', border: '1.5px solid #E2E8F0', color: '#374151', transition: 'all 0.15s',
+            }}>
+              {sidebarOpen ? 'Hide Filters' : 'Show Filters'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {hasActiveFilters && (
+                <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--brand-primary)', background: '#EDE9FE', padding: '4px 10px', borderRadius: '20px', fontFamily: "'DM Sans', sans-serif" }}>
+                  {activeCount} active
+                </span>
               )}
+              <select value={sortBy} onChange={e => { setSortBy(e.target.value); setPage(1) }} style={{
+                padding: '8px 14px', border: '1.5px solid #E2E8F0', borderRadius: '8px',
+                fontSize: '13px', fontFamily: "'DM Sans', sans-serif", outline: 'none', cursor: 'pointer',
+                background: 'white', color: '#374151',
+              }}>
+                <option value="createdAt">Latest</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="views">Most Viewed</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Grid */}
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+              {[...Array(LIMIT)].map((_, i) => (
+                <div key={i} style={{ height: '300px', borderRadius: '12px', background: 'linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
+              ))}
+            </div>
+          ) : ads.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 20px', background: 'white', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
+              <h2 style={{ fontSize: '18px', fontWeight: '700', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px', color: '#0f172a' }}>No ads found</h2>
+              <p style={{ color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", fontSize: '14px', marginBottom: '16px' }}>Try adjusting your filters</p>
+              {hasActiveFilters && (
+                <button onClick={clearFilters} style={{ padding: '10px 20px', background: 'var(--brand-primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', fontSize: '14px' }}>
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="ads-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+              {ads.map(ad => <AdCard key={ad._id} ad={ad} />)}
             </div>
           )}
 
-          {/* Main upload zone — only show if no previews */}
-          {previews.length === 0 && (
-            <label style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              justifyContent: 'center', padding: '32px',
-              border: '2px dashed var(--border-default)', borderRadius: '12px',
-              cursor: 'pointer', background: 'var(--bg-secondary)', transition: 'border-color 0.15s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-            >
-              <span style={{ fontSize: '32px', marginBottom: '8px' }}>📷</span>
-              <span style={{ fontSize: '14px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", color: 'var(--text-secondary)' }}>
-                {isEditMode ? 'Upload new photos (replaces current)' : 'Click to upload photos'}
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", marginTop: '4px' }}>
-                JPG, PNG up to 5MB each — Max 5 photos
-              </span>
-              <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{ display: 'none' }} />
-            </label>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '32px' }}>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: page === 1 ? 'not-allowed' : 'pointer', background: 'white', border: '1.5px solid #E2E8F0', color: '#374151', opacity: page === 1 ? 0.4 : 1 }}>Prev</button>
+              {[...Array(totalPages)].map((_, i) => {
+                const p = i + 1
+                if (p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1)) {
+                  return <button key={p} onClick={() => setPage(p)} style={{ width: '36px', height: '36px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer', background: page === p ? 'var(--brand-primary)' : 'white', color: page === p ? 'white' : '#374151', border: page === p ? 'none' : '1.5px solid #E2E8F0' }}>{p}</button>
+                }
+                if (p === page - 2 || p === page + 2) return <span key={p} style={{ color: '#94A3B8' }}>...</span>
+                return null
+              })}
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', fontFamily: "'DM Sans', sans-serif", cursor: page === totalPages ? 'not-allowed' : 'pointer', background: 'white', border: '1.5px solid #E2E8F0', color: '#374151', opacity: page === totalPages ? 0.4 : 1 }}>Next</button>
+            </div>
           )}
         </div>
-
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          style={{
-            width: '100%', padding: '14px', fontSize: '16px',
-            fontWeight: '700', fontFamily: "'DM Sans', sans-serif",
-            background: 'var(--brand-primary)', color: 'white',
-            border: 'none', borderRadius: '12px', cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.7 : 1, transition: 'all 0.2s',
-          }}
-        >
-          {loading
-            ? (isEditMode ? 'Updating...' : 'Posting...')
-            : (isEditMode ? 'Update Ad' : 'Post Ad')
-          }
-        </button>
       </div>
     </div>
-  )
-}
-
-export default function PostAdPage() {
-  return (
-    <Suspense fallback={
-      <div style={{ padding: '32px', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>
-        Loading...
-      </div>
-    }>
-      <PostAdPageInner />
-    </Suspense>
   )
 }

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import api from '../../../../lib/axios'
 import AdCard from '../../../../components/ads/AdCard'
 import { useSiteSettings } from '../../../../context/SiteSettingsContext'
+import { useLocation } from '../../../../context/LocationContext'
 
 const CATEGORY_FILTERS = {
   mobiles: [
@@ -61,6 +62,7 @@ const LIMIT = 10
 export default function CategoryPage() {
   const { slug } = useParams()
   const { settings } = useSiteSettings()
+  const { location } = useLocation()
 
   const [ads,         setAds]         = useState([])
   const [loading,     setLoading]     = useState(true)
@@ -85,6 +87,7 @@ export default function CategoryPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ category: slug, page, limit: LIMIT, sortBy })
+      if (!location?.isDefault && location?.city) params.append('city', location.city)
       if (minPrice) params.append('minPrice', minPrice)
       if (maxPrice) params.append('maxPrice', maxPrice)
       Object.entries(filters).forEach(([k, v]) => { if (v) params.append(k, v) })
@@ -96,7 +99,7 @@ export default function CategoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [slug, page, sortBy, filters, minPrice, maxPrice])
+  }, [slug, page, sortBy, filters, minPrice, maxPrice, location])
 
   useEffect(() => { fetchAds() }, [fetchAds])
 
@@ -129,7 +132,7 @@ export default function CategoryPage() {
           {categoryName}
         </h1>
         <p style={{ color: '#94A3B8', fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
-          {loading ? 'Loading...' : `${total} ads in Attock`}
+          {loading ? 'Loading...' : `${total} ads in ${location?.isDefault ? 'Pakistan' : location?.city || 'Pakistan'}`}
         </p>
       </div>
 

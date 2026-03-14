@@ -3,9 +3,10 @@
 import { useRouter } from 'next/navigation'
 
 const TRENDING = [
-  'iPhone 13', 'Honda CD 70', 'Toyota Corolla', 'Samsung TV',
-  'Suzuki Mehran', 'AC for sale', 'Laptop', 'Sofa set',
-  'iPhone 14', 'Honda CG 125', 'Fridge', 'Washing Machine',
+  'iPhone 14', 'Honda CD 70', 'Toyota Corolla', 'Samsung TV',
+  'Suzuki Alto', 'AC for sale', 'Laptop', 'Sofa set',
+  'Honda CG 125', 'Fridge', 'Washing Machine', 'Generator',
+  'Plot for sale', 'House for rent', 'Suzuki Mehran',
 ]
 
 export default function TrendingSearches() {

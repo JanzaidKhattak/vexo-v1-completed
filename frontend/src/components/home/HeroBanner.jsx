@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSiteSettings } from '../../context/SiteSettingsContext'
+import { useLocation } from '../../context/LocationContext'
 import { CATEGORIES } from '../../constants/categories'
 
 export default function HeroBanner() {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const { settings } = useSiteSettings()
+  const { location, detecting } = useLocation()
 
   const heading    = settings?.heroHeading    || 'Buy & Sell Anything in Attock'
-  const subheading = settings?.heroSubheading || "Attock's trusted local marketplace. Post your ad for free."
+  const subheading = settings?.heroSubheading || "Pakistan's growing local marketplace. Post your ad for free."
   const buttonText = settings?.heroButtonText || 'Search'
   const bannerImage = settings?.heroBannerImage || ''
   const categories = settings?.categories?.filter(c => c.isActive) || CATEGORIES
@@ -80,7 +82,7 @@ export default function HeroBanner() {
         }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--brand-primary)' }} />
           <span style={{ fontSize: '12px', fontWeight: '500', color: 'rgba(255,255,255,0.85)', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.02em' }}>
-            Serving Attock, Punjab
+            {detecting ? 'Detecting location...' : location?.isDefault ? 'Serving All Pakistan 🇵🇰' : `Serving ${location?.city}${location?.province ? ', ' + location.province : ''}`}
           </span>
         </div>
 

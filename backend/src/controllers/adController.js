@@ -29,9 +29,14 @@ const getAds = async (req, res) => {
       if (maxPrice) query.price.$lte = Number(maxPrice)
     }
 
+    // City filter — filters by ad.area field (case-insensitive)
+    if (rest.city) {
+      query.area = { $regex: new RegExp(rest.city, 'i') }
+    }
+
     // Details filters (brand, make, condition, type, gender, etc.)
     // Any query param that isn't a known system param → treat as details.key
-    const KNOWN = new Set(['category','search','page','limit','sortBy','sort','minPrice','maxPrice'])
+    const KNOWN = new Set(['category','search','page','limit','sortBy','sort','minPrice','maxPrice','city'])
     Object.entries(rest).forEach(([key, value]) => {
       if (!KNOWN.has(key) && value) {
         query[`details.${key}`] = { $regex: new RegExp(`^${value}$`, 'i') }
@@ -124,7 +129,7 @@ const createAd = async (req, res) => {
       details: details ? JSON.parse(details) : {},
       images,
       seller: req.user._id,
-      location: 'Attock',
+      location: 'Pakistan',
     })
 
     await User.findByIdAndUpdate(req.user._id, { $inc: { totalAds: 1 } })

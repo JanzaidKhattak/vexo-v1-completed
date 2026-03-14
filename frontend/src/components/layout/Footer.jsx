@@ -209,7 +209,7 @@ export default function Footer() {
             color: '#6B7280',
             fontFamily: 'Inter, sans-serif',
           }}>
-            Serving Attock, Punjab, Pakistan
+            Serving All Pakistan
           </p>
         </div>
       </div>
