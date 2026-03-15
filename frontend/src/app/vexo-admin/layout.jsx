@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { AdminAuthProvider, useAdminAuth } from '../../context/AdminAuthContext'
 import { SiteSettingsProvider } from '../../context/SiteSettingsContext'
-import api from '../../lib/axios'
+// using fetch directly for admin notifications (avoid user token interceptor)
 
 // ── Admin Notification Bell ───────────────────────────────────────────────────
 function AdminNotificationBell() {
@@ -27,22 +27,32 @@ function AdminNotificationBell() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
+
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('vexo_admin_token')
-      const res = await api.get('/notifications', { headers: { Authorization: `Bearer ${token}` } })
-      setNotifications(res.data.notifications || [])
-      setUnread(res.data.unreadCount || 0)
-    } catch {}
+      if (!token) return
+      const res = await fetch(`${BASE}/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      setNotifications(data.notifications || [])
+      setUnread(data.unreadCount || 0)
+    } catch (e) { console.error('Notif fetch error:', e) }
   }
 
   const markAllRead = async () => {
     try {
       const token = localStorage.getItem('vexo_admin_token')
-      await api.patch('/notifications/read-all', {}, { headers: { Authorization: `Bearer ${token}` } })
+      if (!token) return
+      await fetch(`${BASE}/notifications/read-all`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
       setUnread(0)
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
-    } catch {}
+    } catch (e) { console.error('Mark read error:', e) }
   }
 
   const handleOpen = () => {
