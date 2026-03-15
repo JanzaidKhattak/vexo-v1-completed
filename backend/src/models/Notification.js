@@ -16,7 +16,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['ad_approved', 'ad_rejected', 'ad_sold', 'new_report', 'general'],
+    enum: ['ad_approved', 'ad_rejected', 'ad_sold', 'new_report', 'general', 'ad_status', 'report', 'warning'],
     default: 'general'
   },
   isRead: {
