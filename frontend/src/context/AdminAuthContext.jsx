@@ -1,14 +1,13 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect } from 'react'
-import api from '../lib/axios'
 
 const AdminAuthContext = createContext(null)
-
 const ADMIN_ROLES = ['admin', 'super-admin']
+const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
 export function AdminAuthProvider({ children }) {
-  const [admin, setAdmin] = useState(null)
+  const [admin,   setAdmin]   = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -29,18 +28,30 @@ export function AdminAuthProvider({ children }) {
     try {
       const token = localStorage.getItem('vexo_admin_token')
       if (!token) return
-      const res = await api.get('/auth/me', {
+
+      // Use fetch directly — bypass axios interceptor which adds vexo_token
+      const res = await fetch(`${BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      const user = res.data.user
-      if (!ADMIN_ROLES.includes(user.role)) {
+
+      if (!res.ok) {
         adminLogout()
         return
       }
+
+      const data = await res.json()
+      const user = data.user
+
+      if (!user || !ADMIN_ROLES.includes(user.role)) {
+        adminLogout()
+        return
+      }
+
       setAdmin(user)
       localStorage.setItem('vexo_admin', JSON.stringify(user))
     } catch {
-      adminLogout()
+      // Network error — don't logout, just keep existing admin data
+      console.error('Admin refresh failed — keeping existing session')
     }
   }
 

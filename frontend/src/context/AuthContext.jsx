@@ -6,7 +6,7 @@ import api from '../lib/axios'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user,    setUser]    = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,7 +14,6 @@ export function AuthProvider({ children }) {
       const stored = localStorage.getItem('vexo_user')
       if (stored) {
         setUser(JSON.parse(stored))
-        // Backend se fresh user data lo
         refreshUser()
       }
     } catch (e) {
@@ -33,8 +32,11 @@ export function AuthProvider({ children }) {
       setUser(freshUser)
       localStorage.setItem('vexo_user', JSON.stringify(freshUser))
     } catch (err) {
-      // Token expired ya invalid
-      logout()
+      // Only logout if 401 (invalid token) — not on network errors
+      if (err.response?.status === 401) {
+        logout()
+      }
+      // Network error ya server down — keep existing user session
     }
   }
 
