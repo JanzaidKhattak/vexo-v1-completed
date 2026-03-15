@@ -15,10 +15,24 @@ const reportRoutes = require('./routes/reportRoutes')
 const app = express()
 
 app.use(helmet())
+
+const allowedOrigins = [
+  'https://vexoonline.vercel.app',
+  'https://www.vexoonline.vercel.app',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean)
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin)) return callback(null, true)
+    callback(new Error(`CORS blocked: ${origin}`))
+  },
+  credentials: true,
 }))
+
 app.use(morgan('dev'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
