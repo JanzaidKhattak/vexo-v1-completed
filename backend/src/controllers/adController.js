@@ -127,7 +127,8 @@ const createAd = async (req, res) => {
     const images = req.files ? req.files.map(f => f.path) : []
 
     const ad = await Ad.create({
-      title, description,
+      title,
+      description: description || ' ',
       price: Number(price),
       category,
       area: area || '',
@@ -138,6 +139,21 @@ const createAd = async (req, res) => {
     })
 
     await User.findByIdAndUpdate(req.user._id, { $inc: { totalAds: 1 } })
+
+    // Notify admins about new pending ad
+    try {
+      const admins = await User.find({ role: { $in: ['admin', 'super-admin'] } })
+      for (const admin of admins) {
+        await createNotification(
+          admin._id,
+          '📋 New Ad Submitted',
+          `"${ad.title}" submitted for review by ${req.user.firstName || req.user.email}`,
+          'ad_status',
+          '/vexo-admin/ads'
+        )
+      }
+    } catch (e) { console.error('Notif error:', e) }
+
     return res.status(201).json({ success: true, ad })
   } catch (error) {
     console.error(error)
@@ -174,12 +190,12 @@ const updateAd = async (req, res) => {
 
     await ad.save()
 
-    const admins = await User.find({ role: 'admin' })
-    for (const admin of admins) {
+    const admins = await User.find({ role: { $in: ['admin', 'super-admin'] } })
+    for (const adm of admins) {
       await createNotification(
-        admin._id, 'Ad Updated by User',
-        `User has updated the ad "${ad.title}". Review is pending.`,
-        'general', `/admin/ads`
+        adm._id, '✏️ Ad Updated',
+        `"${ad.title}" was edited — needs re-review`,
+        'ad_status', '/vexo-admin/ads'
       )
     }
 
@@ -265,12 +281,12 @@ const markAsSold = async (req, res) => {
     ad.soldAt = new Date()
     await ad.save()
 
-    const admins = await User.find({ role: 'admin' })
-    for (const admin of admins) {
+    const admins = await User.find({ role: { $in: ['admin', 'super-admin'] } })
+    for (const adm of admins) {
       await createNotification(
-        admin._id, 'Ad Marked as Sold',
-        `User has marked the ad "${ad.title}" as sold.`,
-        'general', `/admin/ads`
+        adm._id, '🏷️ Ad Sold',
+        `"${ad.title}" marked as sold by ${req.user.firstName || req.user.email}`,
+        'ad_status', '/vexo-admin/ads'
       )
     }
 
