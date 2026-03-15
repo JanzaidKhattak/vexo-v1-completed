@@ -15,28 +15,13 @@ const reportSchema = new mongoose.Schema({
     type: String,
     required: true,
     enum: [
-      'Offensive content',
-      'Fraud',
-      'Duplicate ad',
-      'Product already sold',
-      'Wrong category',
-      'Product unavailable',
-      'Fake product',
-      'Indecent',
-      'Other',
-      // legacy enums (backward compat)
+      'Offensive content', 'Fraud', 'Duplicate ad', 'Product already sold',
+      'Wrong category', 'Product unavailable', 'Fake product', 'Indecent', 'Other',
       'spam', 'fraud', 'inappropriate', 'wrong_category', 'duplicate', 'other'
     ]
   },
-  comment: {
-    type: String,
-    default: ''
-  },
-  // legacy field
-  description: {
-    type: String,
-    default: ''
-  },
+  comment: { type: String, default: '' },
+  description: { type: String, default: '' },
   status: {
     type: String,
     enum: ['pending', 'reviewed', 'resolved', 'dismissed'],
@@ -44,24 +29,12 @@ const reportSchema = new mongoose.Schema({
   },
   adminAction: {
     type: String,
-    enum: ['none', 'ad_blocked', 'user_blocked', 'ignored'],
+    enum: ['none', 'ad_blocked', 'ad_unblocked', 'user_blocked', 'warned', 'ignored'],
     default: 'none'
   },
-  actionNote: {
-    type: String,
-    default: ''
-  },
-  actionBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  actionAt: {
-    type: Date,
-    default: null
-  }
-}, {
-  timestamps: true
-})
+  actionNote: { type: String, default: '' },
+  actionBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  actionAt: { type: Date, default: null }
+}, { timestamps: true })
 
 module.exports = mongoose.model('Report', reportSchema)
