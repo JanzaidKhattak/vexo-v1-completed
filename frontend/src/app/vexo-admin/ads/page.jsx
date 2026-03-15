@@ -2,11 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useAdminAuth } from '../../../context/AdminAuthContext'
+import { useSearchParams } from 'next/navigation'
 import api from '../../../lib/axios'
 import toast from 'react-hot-toast'
 
 export default function AdminAdsPage() {
   const { admin } = useAdminAuth()
+  const searchParams = useSearchParams()
+  const highlightId = searchParams?.get('highlight')
+  const highlightRef = useRef({})
   const [ads, setAds] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
