@@ -33,8 +33,11 @@ function AdminNotificationBell() {
     try {
       const token = localStorage.getItem('vexo_admin_token')
       if (!token) return
-      const res = await fetch(`${BASE}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch(`${BASE}/notifications?t=${Date.now()}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+        }
       })
       const data = await res.json()
       setNotifications(data.notifications || [])

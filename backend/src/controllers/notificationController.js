@@ -11,6 +11,10 @@ const getNotifications = async (req, res) => {
       isRead: false
     })
 
+    // Prevent browser caching so new notifications always show
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    res.set('Pragma', 'no-cache')
+
     return res.status(200).json({ success: true, notifications, unreadCount })
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server error' })
