@@ -149,7 +149,7 @@ const createAd = async (req, res) => {
           '📋 New Ad Submitted',
           `"${ad.title}" submitted for review by ${req.user.firstName || req.user.email}`,
           'ad_status',
-          '/vexo-admin/ads'
+          `/vexo-admin/ads?highlight=${ad._id}`
         )
       }
     } catch (e) { console.error('Notif error:', e) }
@@ -195,7 +195,7 @@ const updateAd = async (req, res) => {
       await createNotification(
         adm._id, '✏️ Ad Updated',
         `"${ad.title}" was edited — needs re-review`,
-        'ad_status', '/vexo-admin/ads'
+        'ad_status', `/vexo-admin/ads?highlight=${ad._id}`
       )
     }
 
@@ -222,13 +222,13 @@ const deleteAd = async (req, res) => {
     await Ad.findByIdAndDelete(req.params.id)
     await User.findByIdAndUpdate(ad.seller, { $inc: { totalAds: -1 } })
 
-    if (req.user.role !== 'admin') {
-      const admins = await User.find({ role: 'admin' })
-      for (const admin of admins) {
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
+      const admins = await User.find({ role: { $in: ['admin', 'super-admin'] } })
+      for (const adm of admins) {
         await createNotification(
-          admin._id, 'Ad Deleted by User',
-          `User has deleted their ad "${adTitle}".`,
-          'general', `/admin/ads`
+          adm._id, '🗑️ Ad Deleted',
+          `"${adTitle}" deleted by ${req.user.firstName || req.user.email}`,
+          'general', '/vexo-admin/ads'
         )
       }
     }
@@ -286,7 +286,7 @@ const markAsSold = async (req, res) => {
       await createNotification(
         adm._id, '🏷️ Ad Sold',
         `"${ad.title}" marked as sold by ${req.user.firstName || req.user.email}`,
-        'ad_status', '/vexo-admin/ads'
+        'ad_status', `/vexo-admin/ads?highlight=${ad._id}`
       )
     }
 

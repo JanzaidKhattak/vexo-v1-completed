@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAdminAuth } from '../../../context/AdminAuthContext'
 import api from '../../../lib/axios'
 import toast from 'react-hot-toast'
@@ -14,6 +14,16 @@ export default function AdminAdsPage() {
   const [showDiff, setShowDiff] = useState(false)
 
   useEffect(() => { fetchAds() }, [filter])
+
+  // Auto scroll + highlight when coming from notification
+  useEffect(() => {
+    if (highlightId && Object.keys(highlightRef.current).length > 0) {
+      setTimeout(() => {
+        const el = highlightRef.current[highlightId]
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 600)
+    }
+  }, [highlightId, ads])
 
   const getToken = () => localStorage.getItem('vexo_admin_token')
 
@@ -135,9 +145,12 @@ export default function AdminAdsPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeUp 0.4s ease 0.1s both' }}>
           {ads.map(ad => (
-            <div key={ad._id} className="ad-row" style={{
-              background: 'white', borderRadius: '14px', padding: '20px 24px',
-              border: ad.hasUpdate ? '2px solid #F59E0B' : '1.5px solid #E2E8F0',
+            <div key={ad._id}
+              ref={el => { if (el) highlightRef.current[String(ad._id)] = el }}
+              className="ad-row" style={{
+              background: highlightId === String(ad._id) ? '#EDE9FE' : 'white',
+              borderRadius: '14px', padding: '20px 24px',
+              border: highlightId === String(ad._id) ? '2px solid #6C3AF5' : ad.hasUpdate ? '2px solid #F59E0B' : '1.5px solid #E2E8F0',
               display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap',
               transition: 'all 0.2s',
             }}>

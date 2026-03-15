@@ -14,8 +14,10 @@ function ProfilePageInner() {
   const fileRef = useRef(null)
 
   const initialTab = searchParams.get('tab') || 'overview'
+  const highlightId = searchParams.get('highlight')
   const [activeTab, setActiveTab] = useState(initialTab)
   const [adsTab, setAdsTab] = useState('active')
+  const adRefs = useRef({})
 
   const [myAds, setMyAds] = useState([])
   const [soldAds, setSoldAds] = useState([])
@@ -59,8 +61,28 @@ function ProfilePageInner() {
         api.get('/users/my-ads'),
         api.get('/users/my-ads?status=sold'),
       ])
-      setMyAds(activeRes.data.ads.filter(a => a.status !== 'sold'))
-      setSoldAds(soldRes.data.ads.filter(a => a.status === 'sold'))
+      const active = activeRes.data.ads.filter(a => a.status !== 'sold')
+      const sold = soldRes.data.ads.filter(a => a.status === 'sold')
+      setMyAds(active)
+      setSoldAds(sold)
+
+      // If came from notification with highlight — switch to ads tab + correct sub-tab
+      if (highlightId) {
+        setActiveTab('ads')
+        const allAds = [...active, ...sold]
+        const found = allAds.find(a => String(a._id) === highlightId)
+        if (found) {
+          if (found.status === 'sold') setAdsTab('sold')
+          else if (found.status === 'pending') setAdsTab('pending')
+          else if (found.status === 'rejected') setAdsTab('rejected')
+          else setAdsTab('active')
+        }
+        // Scroll after render
+        setTimeout(() => {
+          const el = adRefs.current[highlightId]
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 700)
+      }
     } catch (err) { console.error(err) }
     finally { setLoading(false) }
   }
@@ -668,11 +690,14 @@ function ProfilePageInner() {
                   {displayAds.map(ad => (
                     <div
                       key={ad._id}
+                      ref={el => { if (el) adRefs.current[String(ad._id)] = el }}
                       className="ad-row"
                       style={{
                         display: 'flex', alignItems: 'center', gap: '16px',
-                        padding: '16px 20px', background: 'white',
-                        borderRadius: '14px', border: '1.5px solid #E2E8F0',
+                        padding: '16px 20px',
+                        background: highlightId === String(ad._id) ? '#EDE9FE' : 'white',
+                        borderRadius: '14px',
+                        border: highlightId === String(ad._id) ? '2px solid #6C3AF5' : '1.5px solid #E2E8F0',
                         transition: 'all 0.2s', flexWrap: 'wrap',
                       }}
                     >
