@@ -15,7 +15,19 @@ export function SiteSettingsProvider({ children }) {
 
   const applySettings = (s) => {
     if (!s) return
-    // Only apply favicon and site title — colors/fonts are fixed in globals.css
+    const root = document.documentElement
+
+    // Colors
+    if (s.primaryColor) root.style.setProperty('--brand-primary', s.primaryColor)
+    if (s.secondaryColor) root.style.setProperty('--warning', s.secondaryColor)
+
+    // Font
+    if (s.fontFamily) {
+      root.style.setProperty('--font-family', s.fontFamily)
+      document.body.style.fontFamily = `'${s.fontFamily}', sans-serif`
+    }
+
+    // Favicon
     if (s.faviconUrl) {
       let link = document.querySelector("link[rel~='icon']")
       if (!link) {
@@ -25,8 +37,10 @@ export function SiteSettingsProvider({ children }) {
       }
       link.href = s.faviconUrl
     }
+
+    // Site title
     if (s.siteName) {
-      document.title = `${s.siteName} - Buy & Sell in Pakistan`
+      document.title = `${s.siteName} - Buy & Sell in Attock`
     }
   }
 
