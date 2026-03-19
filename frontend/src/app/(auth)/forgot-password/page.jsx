@@ -1,4 +1,3 @@
- 
 'use client'
 
 import { useState, useRef } from 'react'
@@ -12,7 +11,7 @@ export default function ForgotPasswordPage() {
   const { settings } = useSiteSettings()
   const router = useRouter()
 
-  const [step, setStep] = useState('email') // email → otp → newpass
+  const [step, setStep] = useState('email')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -20,10 +19,10 @@ export default function ForgotPasswordPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [otpTimer, setOtpTimer] = useState(0)
+  const [errors, setErrors] = useState({})
 
-  // Timer
   const startTimer = () => {
-    setOtpTimer(600) // 10 min
+    setOtpTimer(600)
     const interval = setInterval(() => {
       setOtpTimer(prev => {
         if (prev <= 1) { clearInterval(interval); return 0 }
@@ -31,37 +30,35 @@ export default function ForgotPasswordPage() {
       })
     }, 1000)
   }
-
   const formatTimer = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
   const handleSendOtp = async (e) => {
-    e.preventDefault()
-    if (!email) { toast.error('Please enter your email'); return }
+    e?.preventDefault()
+    if (!email) { setErrors({ email: 'Email is required' }); return }
     setLoading(true)
     try {
       await api.post('/auth/forgot-password', { email })
-      toast.success('If this email exists, a reset code has been sent!')
+      toast.success('Reset code sent!')
       setStep('otp')
       startTimer()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send code')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const handleVerifyOtp = (e) => {
     e.preventDefault()
-    if (!otp || otp.length !== 6) { toast.error('Please enter 6-digit code'); return }
+    if (!otp || otp.length !== 6) { setErrors({ otp: 'Enter 6-digit code' }); return }
     setStep('newpass')
   }
 
   const handleResetPassword = async (e) => {
     e.preventDefault()
-    if (!newPassword || !confirmPassword) { toast.error('Please fill all fields'); return }
-    if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return }
-    if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return }
-
+    const errs = {}
+    if (!newPassword) errs.newPassword = 'Required'
+    else if (newPassword.length < 6) errs.newPassword = 'Min. 6 characters'
+    if (newPassword !== confirmPassword) errs.confirmPassword = 'Passwords do not match'
+    if (Object.keys(errs).length) { setErrors(errs); return }
     setLoading(true)
     try {
       await api.post('/auth/reset-password', { email, otp, newPassword })
@@ -69,252 +66,127 @@ export default function ForgotPasswordPage() {
       router.push('/login')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Reset failed')
-      setStep('otp') // OTP step pe wapis
-    } finally {
-      setLoading(false)
-    }
+      setStep('otp')
+    } finally { setLoading(false) }
   }
 
   const steps = ['email', 'otp', 'newpass']
   const stepIndex = steps.indexOf(step)
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '20px', position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{
-        position: 'absolute', top: '-120px', right: '-120px',
-        width: '500px', height: '500px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(108,58,245,0.15) 0%, transparent 70%)',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-100px', left: '-100px',
-        width: '400px', height: '400px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(230,57,70,0.1) 0%, transparent 70%)',
-      }} />
-
+    <div style={{ minHeight: '100vh', background: '#0B0C10', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', position: 'relative', overflow: 'hidden' }}>
       <style>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .auth-input:focus {
-          border-color: #6C3AF5 !important;
-          box-shadow: 0 0 0 3px rgba(108,58,245,0.1) !important;
-        }
-        .auth-input { transition: all 0.2s ease !important; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes floatGlow { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.25; } }
+        @keyframes stepPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(102,252,241,0.3); } 50% { box-shadow: 0 0 0 6px rgba(102,252,241,0); } }
+        .vx-input { width: 100%; padding: 12px 16px; background: rgba(31,40,51,0.6); border: 1.5px solid rgba(102,252,241,0.15); border-radius: 6px; font-size: 15px; font-family: 'Afacad', sans-serif; color: #C5C6C7; outline: none; transition: all 0.2s ease; box-sizing: border-box; }
+        .vx-input:focus { border-color: #66FCF1; box-shadow: 0 0 0 3px rgba(102,252,241,0.08); background: rgba(31,40,51,0.9); }
+        .vx-input::placeholder { color: rgba(197,198,199,0.35); }
+        .vx-input.err { border-color: #ff4757 !important; }
+        .vx-btn { width: 100%; padding: 13px; background: transparent; color: #66FCF1; border: 1.5px solid #66FCF1; border-radius: 6px; font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; cursor: pointer; position: relative; overflow: hidden; transition: color 0.25s ease; }
+        .vx-btn::before { content: ''; position: absolute; inset: 0; background: #66FCF1; transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease; }
+        .vx-btn:hover::before { transform: scaleX(1); }
+        .vx-btn:hover { color: #0B0C10; }
+        .vx-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .vx-btn span { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .field-err { font-family: 'Afacad', sans-serif; font-size: 12px; color: #ff4757; margin-top: 4px; animation: fadeInUp 0.2s ease; }
+        .lbl { display: block; font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 600; color: rgba(197,198,199,0.6); letter-spacing: 0.1em; margin-bottom: 7px; }
       `}</style>
 
-      <div style={{
-        background: 'white', borderRadius: '24px',
-        padding: '44px 40px', width: '100%', maxWidth: '440px',
-        boxShadow: '0 32px 100px rgba(0,0,0,0.4)',
-        position: 'relative', zIndex: 1,
-        animation: 'fadeInUp 0.5s ease forwards',
-      }}>
+      <div style={{ position: 'absolute', top: '-200px', right: '-200px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(102,252,241,0.07) 0%, transparent 70%)', animation: 'floatGlow 6s ease-in-out infinite' }} />
+
+      <div style={{ background: 'rgba(31,40,51,0.7)', backdropFilter: 'blur(20px)', borderRadius: '12px', padding: '44px 40px', width: '100%', maxWidth: '420px', border: '1px solid rgba(102,252,241,0.12)', boxShadow: '0 0 60px rgba(0,0,0,0.6)', position: 'relative', zIndex: 1, animation: 'fadeInUp 0.5s ease forwards' }}>
+
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
-            {settings?.logoUrl ? (
-              <img src={settings.logoUrl} alt="logo" style={{ height: '36px', width: 'auto' }} />
-            ) : (
-              <div style={{
-                width: '40px', height: '40px', background: '#6C3AF5',
-                borderRadius: '10px', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', color: 'white', fontWeight: '800', fontSize: '18px',
-              }}>
-                {settings?.siteName?.charAt(0) || 'V'}
-              </div>
-            )}
-            <span style={{ fontSize: '24px', fontWeight: '800', color: '#111827', fontFamily: 'Inter, sans-serif' }}>
-              {settings?.siteName || 'VEXO'}
-            </span>
+            <div style={{ width: '40px', height: '40px', border: '2px solid #66FCF1', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#66FCF1', fontFamily: "'Orbitron', sans-serif", fontWeight: '900', fontSize: '15px' }}>V</span>
+            </div>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '26px', color: '#66FCF1', letterSpacing: '0.1em' }}>{settings?.siteName || 'VEXO'}</span>
           </Link>
         </div>
 
         {/* Step indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '28px' }}>
-          {['Email', 'Code', 'Password'].map((s, i) => (
-            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                background: i <= stepIndex ? '#6C3AF5' : '#F3F4F6',
-                color: i <= stepIndex ? 'white' : '#9CA3AF',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '12px', fontWeight: '700', fontFamily: 'Inter, sans-serif',
-                transition: 'all 0.3s ease',
-              }}>
-                {i < stepIndex ? '✓' : i + 1}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0', marginBottom: '32px' }}>
+          {['EMAIL', 'CODE', 'NEW PASS'].map((s, i) => (
+            <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: i < stepIndex ? '#66FCF1' : i === stepIndex ? 'transparent' : 'transparent', border: `2px solid ${i <= stepIndex ? '#66FCF1' : 'rgba(197,198,199,0.2)'}`, color: i < stepIndex ? '#0B0C10' : i === stepIndex ? '#66FCF1' : 'rgba(197,198,199,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Orbitron', sans-serif", fontSize: '11px', fontWeight: '700', margin: '0 auto 6px', animation: i === stepIndex ? 'stepPulse 2s ease infinite' : 'none', transition: 'all 0.3s ease' }}>
+                  {i < stepIndex ? '✓' : i + 1}
+                </div>
+                <span style={{ fontFamily: "'Orbitron', sans-serif", fontSize: '9px', color: i === stepIndex ? '#66FCF1' : 'rgba(197,198,199,0.3)', letterSpacing: '0.06em' }}>{s}</span>
               </div>
-              <span style={{
-                fontSize: '12px', fontFamily: 'Inter, sans-serif',
-                color: i === stepIndex ? '#111827' : '#9CA3AF',
-                fontWeight: i === stepIndex ? '600' : '400',
-              }}>{s}</span>
-              {i < 2 && <div style={{ width: '24px', height: '2px', background: i < stepIndex ? '#6C3AF5' : '#E5E7EB', borderRadius: '2px', transition: 'all 0.3s ease' }} />}
+              {i < 2 && <div style={{ width: '32px', height: '2px', background: i < stepIndex ? '#66FCF1' : 'rgba(197,198,199,0.1)', margin: '0 4px 16px', transition: 'all 0.3s ease' }} />}
             </div>
           ))}
         </div>
 
-        {/* Step 1: Email */}
+        {/* Step 1 */}
         {step === 'email' && (
           <>
-            <div style={{ marginBottom: '28px' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em', marginBottom: '6px' }}>
-                Forgot Password? 🔐
-              </h1>
-              <p style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
-                Enter your email and we'll send a reset code
-              </p>
-            </div>
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '30px', color: '#C5C6C7', letterSpacing: '0.06em', marginBottom: '6px' }}>FORGOT PASSWORD</h1>
+            <p style={{ fontFamily: "'Afacad', sans-serif", fontSize: '14px', color: 'rgba(197,198,199,0.5)', marginBottom: '28px' }}>Enter your email to receive a reset code</p>
             <form onSubmit={handleSendOtp}>
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '6px' }}>
-                  Email Address
-                </label>
-                <input
-                  type="email" value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="auth-input"
-                  style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #E5E7EB', borderRadius: '10px', fontSize: '14px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
-                />
+                <label className="lbl">EMAIL ADDRESS</label>
+                <input type="email" value={email} onChange={e => { setEmail(e.target.value); setErrors({}); }} placeholder="you@example.com" className={`vx-input${errors.email ? ' err' : ''}`} />
+                {errors.email && <p className="field-err">{errors.email}</p>}
               </div>
-              <button type="submit" disabled={loading} style={{
-                width: '100%', padding: '13px',
-                background: '#6C3AF5', color: 'white', border: 'none',
-                borderRadius: '10px', fontSize: '15px', fontWeight: '700',
-                fontFamily: 'Inter, sans-serif', cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-              }}>
-                {loading ? 'Sending...' : 'Send Reset Code →'}
+              <button type="submit" disabled={loading} className="vx-btn">
+                <span>{loading ? <><span className="vexo-spinner vexo-spinner-sm" style={{ borderTopColor: '#0B0C10' }} /> SENDING...</> : 'SEND RESET CODE'}</span>
               </button>
             </form>
           </>
         )}
 
-        {/* Step 2: OTP */}
+        {/* Step 2 */}
         {step === 'otp' && (
           <>
-            <div style={{ marginBottom: '28px' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em', marginBottom: '6px' }}>
-                Enter Reset Code 📩
-              </h1>
-              <p style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
-                6-digit code sent to <strong>{email}</strong>
-              </p>
-            </div>
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '30px', color: '#C5C6C7', letterSpacing: '0.06em', marginBottom: '6px' }}>ENTER CODE</h1>
+            <p style={{ fontFamily: "'Afacad', sans-serif", fontSize: '14px', color: 'rgba(197,198,199,0.5)', marginBottom: '28px' }}>6-digit code sent to <span style={{ color: '#66FCF1' }}>{email}</span></p>
             <form onSubmit={handleVerifyOtp}>
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '6px' }}>
-                  Reset Code
-                </label>
-                <input
-                  value={otp}
-                  onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000"
-                  maxLength={6}
-                  className="auth-input"
-                  style={{
-                    width: '100%', padding: '14px', border: '1.5px solid #E5E7EB',
-                    borderRadius: '10px', fontSize: '24px', fontFamily: 'Inter, sans-serif',
-                    outline: 'none', boxSizing: 'border-box',
-                    letterSpacing: '10px', fontWeight: '800', textAlign: 'center',
-                  }}
-                />
-                {otpTimer > 0 && (
-                  <p style={{ fontSize: '12px', color: '#6B7280', fontFamily: 'Inter, sans-serif', marginTop: '6px', textAlign: 'center' }}>
-                    Code expires in <strong style={{ color: '#6C3AF5' }}>{formatTimer(otpTimer)}</strong>
-                  </p>
-                )}
-                {otpTimer === 0 && (
-                  <p style={{ fontSize: '12px', fontFamily: 'Inter, sans-serif', marginTop: '6px', textAlign: 'center' }}>
-                    Code expired?{' '}
-                    <button type="button" onClick={handleSendOtp} style={{ background: 'none', border: 'none', color: '#6C3AF5', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>
-                      Resend
-                    </button>
-                  </p>
-                )}
+                <label className="lbl">RESET CODE</label>
+                <input value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setErrors({}); }} placeholder="000000" maxLength={6} className={`vx-input${errors.otp ? ' err' : ''}`} style={{ textAlign: 'center', fontSize: '28px', fontFamily: "'Orbitron', sans-serif", fontWeight: '700', letterSpacing: '10px', color: '#66FCF1' }} />
+                {errors.otp && <p className="field-err">{errors.otp}</p>}
+                {otpTimer > 0 && <p style={{ fontFamily: "'Afacad', sans-serif", fontSize: '12px', color: 'rgba(197,198,199,0.4)', textAlign: 'center', marginTop: '8px' }}>Expires in <span style={{ color: '#66FCF1' }}>{formatTimer(otpTimer)}</span></p>}
+                {otpTimer === 0 && <p style={{ fontFamily: "'Afacad', sans-serif", fontSize: '12px', textAlign: 'center', marginTop: '8px', color: 'rgba(197,198,199,0.4)' }}>Expired? <button type="button" onClick={handleSendOtp} style={{ background: 'none', border: 'none', color: '#66FCF1', cursor: 'pointer', fontFamily: "'Afacad', sans-serif", fontSize: '12px', fontWeight: '600' }}>Resend</button></p>}
               </div>
-              <button type="submit" style={{
-                width: '100%', padding: '13px',
-                background: '#6C3AF5', color: 'white', border: 'none',
-                borderRadius: '10px', fontSize: '15px', fontWeight: '700',
-                fontFamily: 'Inter, sans-serif', cursor: 'pointer',
-              }}>
-                Verify Code →
-              </button>
+              <button type="submit" className="vx-btn"><span>VERIFY CODE</span></button>
             </form>
           </>
         )}
 
-        {/* Step 3: New Password */}
+        {/* Step 3 */}
         {step === 'newpass' && (
           <>
-            <div style={{ marginBottom: '28px' }}>
-              <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em', marginBottom: '6px' }}>
-                Set New Password 🔑
-              </h1>
-              <p style={{ fontSize: '14px', color: '#6B7280', fontFamily: 'Inter, sans-serif' }}>
-                Choose a strong password for your account
-              </p>
-            </div>
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '30px', color: '#C5C6C7', letterSpacing: '0.06em', marginBottom: '6px' }}>NEW PASSWORD</h1>
+            <p style={{ fontFamily: "'Afacad', sans-serif", fontSize: '14px', color: 'rgba(197,198,199,0.5)', marginBottom: '28px' }}>Choose a strong password</p>
             <form onSubmit={handleResetPassword}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '6px' }}>
-                  New Password
-                </label>
+              <div style={{ marginBottom: '14px' }}>
+                <label className="lbl">NEW PASSWORD</label>
                 <div style={{ position: 'relative' }}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                    placeholder="Min. 6 characters"
-                    className="auth-input"
-                    style={{ width: '100%', padding: '11px 44px 11px 14px', border: '1.5px solid #E5E7EB', borderRadius: '10px', fontSize: '14px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
-                    {showPassword ? '🙈' : '👁️'}
-                  </button>
+                  <input type={showPassword ? 'text' : 'password'} value={newPassword} onChange={e => { setNewPassword(e.target.value); setErrors(p => ({...p, newPassword: ''})); }} placeholder="Min. 6 characters" className={`vx-input${errors.newPassword ? ' err' : ''}`} style={{ paddingRight: '44px' }} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(197,198,199,0.4)' }}>{showPassword ? '✕' : '○'}</button>
                 </div>
+                {errors.newPassword && <p className="field-err">{errors.newPassword}</p>}
               </div>
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', fontFamily: 'Inter, sans-serif', marginBottom: '6px' }}>
-                  Confirm Password
-                </label>
-                <input
-                  type="password" value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter password"
-                  className="auth-input"
-                  style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #E5E7EB', borderRadius: '10px', fontSize: '14px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
-                />
-                {confirmPassword && (
-                  <p style={{ fontSize: '12px', marginTop: '4px', fontFamily: 'Inter, sans-serif', color: newPassword === confirmPassword ? '#10B981' : '#EF4444' }}>
-                    {newPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
-                  </p>
-                )}
+                <label className="lbl">CONFIRM PASSWORD</label>
+                <input type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setErrors(p => ({...p, confirmPassword: ''})); }} placeholder="Re-enter password" className={`vx-input${errors.confirmPassword ? ' err' : confirmPassword && newPassword === confirmPassword ? ' ok' : ''}`} />
+                {errors.confirmPassword && <p className="field-err">{errors.confirmPassword}</p>}
+                {confirmPassword && newPassword === confirmPassword && !errors.confirmPassword && <p style={{ fontFamily: "'Afacad', sans-serif", fontSize: '12px', color: '#66FCF1', marginTop: '4px' }}>Passwords match</p>}
               </div>
-              <button type="submit" disabled={loading} style={{
-                width: '100%', padding: '13px',
-                background: '#6C3AF5', color: 'white', border: 'none',
-                borderRadius: '10px', fontSize: '15px', fontWeight: '700',
-                fontFamily: 'Inter, sans-serif', cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
-              }}>
-                {loading ? 'Resetting...' : '🔐 Reset Password'}
+              <button type="submit" disabled={loading} className="vx-btn">
+                <span>{loading ? <><span className="vexo-spinner vexo-spinner-sm" style={{ borderTopColor: '#0B0C10' }} /> RESETTING...</> : 'RESET PASSWORD'}</span>
               </button>
             </form>
           </>
         )}
 
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#6B7280' }}>
-          Remember your password?{' '}
-          <Link href="/login" style={{ color: '#6C3AF5', fontWeight: '700', textDecoration: 'none' }}>
-            Sign in
-          </Link>
+        <p style={{ textAlign: 'center', marginTop: '20px', fontFamily: "'Afacad', sans-serif", fontSize: '14px', color: 'rgba(197,198,199,0.5)' }}>
+          Remember it? <Link href="/login" style={{ color: '#66FCF1', fontWeight: '600', textDecoration: 'none' }}>Sign in</Link>
         </p>
       </div>
     </div>
