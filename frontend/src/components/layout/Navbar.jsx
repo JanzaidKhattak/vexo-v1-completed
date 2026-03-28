@@ -521,7 +521,7 @@ export default function Navbar() {
           alignItems: "center", gap: "8px", flexShrink: 0,
         }}>
           {settings?.logoUrl ? (
-            <img src={settings.logoUrl} alt="logo" style={{ height: "100px", width: "auto", borderRadius: "6px" }} />
+            <img src={settings.logoUrl} alt="logo" style={{ height: "64px", width: "auto", borderRadius: "6px" }} />
           ) : (
             <div style={{
               width: "32px", height: "32px", background: "var(--brand-primary)",

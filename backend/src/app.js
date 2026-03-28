@@ -20,6 +20,8 @@ const allowedOrigins = [
   'https://vexoonline.vercel.app',
   'https://www.vexoonline.vercel.app',
   'http://localhost:3000',
+  'https://vexoo.online',       
+  'https://www.vexoo.online',
   process.env.FRONTEND_URL,
 ].filter(Boolean)
 
