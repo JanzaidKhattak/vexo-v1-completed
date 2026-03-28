@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import HeroBanner from '../../components/home/HeroBanner'
 import CategoryGrid from '../../components/home/CategoryGrid'
-import TrendingSearches from '../../components/home/TrendingSearches'
+// import TrendingSearches from '../../components/home/TrendingSearches'
 import TrendingAds from '../../components/home/TrendingAds'
 import RecentAds from '../../components/home/RecentAds'
-import AdBannerSlot from '../../components/home/AdBannerSlot'
+// import AdBannerSlot from '../../components/home/AdBannerSlot'
 import api from '../../lib/axios'
 import Link from 'next/link'
 import { useSiteSettings } from '../../context/SiteSettingsContext'
@@ -94,34 +94,34 @@ export default function HomePage() {
 
       <div className="page-container" style={{ paddingTop: '24px', paddingBottom: '48px' }}>
 
-        <AdBannerSlot type="leaderboard" />
+        {/* <AdBannerSlot type="leaderboard" /> */}
 
         <section style={{ marginTop: '28px' }}>
           <CategoryGrid />
         </section>
 
-        <section style={{ marginTop: '28px' }}>
+        {/* <section style={{ marginTop: '28px' }}>
           <TrendingSearches />
-        </section>
+        </section> */}
 
         <section style={{ marginTop: '36px' }}>
           <SectionHeader title="Trending Now" subtitle="Most viewed ads in Pakistan" />
           <TrendingAds ads={trendingAds} loading={loading} />
         </section>
 
-        <div style={{ marginTop: '36px' }}>
+        {/* <div style={{ marginTop: '36px' }}>
           <AdBannerSlot type="banner" />
-        </div>
+        </div> */}
 
         {activeSections.map((s, i) => (
           <section key={s.category} style={{ marginTop: '40px' }}>
             <SectionHeader title={s.title} subtitle={s.subtitle} href={s.href} />
             <RecentAds ads={getAdsByCategory(s.category)} loading={loading} />
-            {i === 2 && (
+            {/* {i === 2 && (
               <div style={{ marginTop: '36px' }}>
                 <AdBannerSlot type="leaderboard" />
               </div>
-            )}
+            )} */}
           </section>
         ))}
 

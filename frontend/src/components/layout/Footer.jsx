@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSiteSettings } from "../../context/SiteSettingsContext";
 
 const FOOTER_LINKS = {
   Categories: [
@@ -22,6 +23,7 @@ const FOOTER_LINKS = {
 }
 
 export default function Footer() {
+  const { settings } = useSiteSettings();
   return (
     <footer style={{
       background: '#111827',
@@ -36,64 +38,58 @@ export default function Footer() {
           marginBottom: '40px',
         }}>
           {/* Brand */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-              <div style={{
-                width: '30px',
-                height: '30px',
-                background: 'var(--brand-primary)',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: '800',
-                fontSize: '13px',
-                fontFamily: 'Inter, sans-serif',
-              }}>V</div>
-              <span style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: '800',
-                fontSize: '16px',
-                color: 'white',
-                letterSpacing: '-0.02em',
-              }}>VEXO</span>
-            </div>
-            <p style={{
-              fontSize: '13px',
-              color: '#9CA3AF',
-              fontFamily: 'Inter, sans-serif',
-              lineHeight: '1.7',
-              marginBottom: '16px',
-            }}>
-              Verified Exchange Online — Attock's trusted local marketplace.
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {['facebook.com', 'instagram.com', 'twitter.com', 'wa.me'].map((social, i) => {
-                const labels = ['f', 'in', 'x', 'w']
-                return (
-                  <a key={social} href={`https://${social}`} target="_blank" rel="noreferrer" style={{
-                    width: '32px',
-                    height: '32px',
-                    background: '#1F2937',
-                    borderRadius: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#9CA3AF',
-                    textDecoration: 'none',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    fontFamily: 'Inter, sans-serif',
-                    transition: 'background 0.15s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--brand-primary)'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#1F2937'}
-                  >{labels[i]}</a>
-                )
-              })}
-            </div>
-          </div>
+<div>
+  {settings?.logoUrl && (
+    <img
+      src={settings.logoUrl}
+      alt="logo"
+      style={{ height: "100px", width: "auto", borderRadius: "6px" }}
+    />
+  )}
+
+  <p style={{
+    fontSize: '13px',
+    color: '#9CA3AF',
+    fontFamily: 'Inter, sans-serif',
+    lineHeight: '1.7',
+    marginBottom: '16px',
+  }}>
+    Verified Exchange Online — Attock's trusted local marketplace.
+  </p>
+
+  <div style={{ display: 'flex', gap: '10px' }}>
+  {['facebook.com', 'instagram.com', 'twitter.com', 'wa.me'].map((social, i) => {
+    const labels = ['f', 'in', 'x', 'w']
+    return (
+      <a
+        key={social}
+        href={`https://${social}`}
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          width: '32px',
+          height: '32px',
+          background: '#1F2937',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#9CA3AF',
+          textDecoration: 'none',
+          fontSize: '12px',
+          fontWeight: '600',
+          fontFamily: 'Inter, sans-serif',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--brand-primary)'}
+        onMouseLeave={e => e.currentTarget.style.background = '#1F2937'}
+      >
+        {labels[i]}
+      </a>
+    )
+  })}
+</div>
+</div>
 
           {/* Categories */}
           <div>
@@ -169,12 +165,12 @@ export default function Footer() {
             }}>
               Any issue? Reach us on WhatsApp.
             </p>
-            <a href="https://wa.me/923000000000" target="_blank" rel="noreferrer" style={{
+            <a href="https://wa.me/923415919191" target="_blank" rel="noreferrer" style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               padding: '8px 14px',
-              background: '#25D366',
+              background: '#ff5a19',
               color: 'white',
               borderRadius: '8px',
               textDecoration: 'none',

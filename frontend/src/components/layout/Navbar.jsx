@@ -521,7 +521,7 @@ export default function Navbar() {
           alignItems: "center", gap: "8px", flexShrink: 0,
         }}>
           {settings?.logoUrl ? (
-            <img src={settings.logoUrl} alt="logo" style={{ height: "32px", width: "auto", borderRadius: "6px" }} />
+            <img src={settings.logoUrl} alt="logo" style={{ height: "100px", width: "auto", borderRadius: "6px" }} />
           ) : (
             <div style={{
               width: "32px", height: "32px", background: "var(--brand-primary)",
@@ -529,15 +529,8 @@ export default function Navbar() {
               justifyContent: "center", color: "white", fontWeight: "800",
               fontSize: "14px", fontFamily: "'DM Sans', sans-serif",
             }}>
-              {settings?.siteName?.charAt(0) || "V"}
             </div>
           )}
-          <span style={{
-            fontFamily: "'DM Sans', sans-serif", fontWeight: "800",
-            fontSize: "18px", color: "var(--text-primary)", letterSpacing: "-0.03em",
-          }}>
-            {settings?.siteName || "VEXO"}
-          </span>
         </Link>
 
         {/* Location Picker — show on all screens */}

@@ -5,8 +5,8 @@
 }
 
 :root {
-  --brand-primary: #6C3AF5;
-  --brand-secondary: #1D2D44;
+  --brand-primary: #ff5a19;
+  --brand-secondary: #0f2f63;
   --brand-light: #F0EBFF;
 
   --text-primary: #111827;
@@ -22,7 +22,6 @@
   --border-strong: #D1D5DB;
 
   --danger: #EF4444;
-  --success: #10B981;
   --warning: #F59E0B;
 
   /* Spacing scale */

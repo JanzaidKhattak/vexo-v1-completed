@@ -125,7 +125,7 @@ export default function HeroBanner() {
           }}>{buttonText}</button>
         </form>
 
-        <div className="hero-cats">
+        {/* <div className="hero-cats">
           {categories.slice(0, 8).map(cat => (
             <a key={cat.id} href={`/category/${cat.slug || cat.id}`} style={{
               padding: '7px 16px',
@@ -149,7 +149,7 @@ export default function HeroBanner() {
               {cat.icon} {cat.name}
             </a>
           ))}
-        </div>
+        </div> */}
 
         <div className="hero-stats" style={{ display: 'flex', justifyContent: 'center', marginTop: '48px' }}>
           {[
