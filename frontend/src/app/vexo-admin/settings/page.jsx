@@ -9,20 +9,8 @@ const TABS = [
   { key: "branding",    label: "Branding"      },
   { key: "hero",        label: "Hero Banner"   },
   { key: "categories",  label: "Categories"    },
-  { key: "colors",      label: "Colors & Font" },
   { key: "social",      label: "Social Links"  },
   { key: "contact",     label: "Contact"       },
-];
-
-const FONT_OPTIONS = ["Inter","Roboto","Poppins","Nunito","Lato","Montserrat"];
-
-const COLOR_PRESETS = [
-  { name: "Purple", primary: "#6C3AF5" },
-  { name: "Blue",   primary: "#2563EB" },
-  { name: "Green",  primary: "#059669" },
-  { name: "Red",    primary: "#DC2626" },
-  { name: "Pink",   primary: "#DB2777" },
-  { name: "Orange", primary: "#EA580C" },
 ];
 
 // Icon size options in px
@@ -424,11 +412,6 @@ export default function AdminSettingsPage() {
   const [heroBannerFile,  setHeroBannerFile]  = useState(null);
   const [heroBannerPreview, setHeroBannerPreview] = useState("");
 
-  // Colors
-  const [primaryColor,   setPrimaryColor]   = useState("#6C3AF5");
-  const [secondaryColor, setSecondaryColor] = useState("#F59E0B");
-  const [fontFamily,     setFontFamily]     = useState("Inter");
-
   // Categories
   const [categories,  setCategories]  = useState([]);
   const [newCatName,  setNewCatName]  = useState("");
@@ -467,9 +450,6 @@ export default function AdminSettingsPage() {
       setHeroSubheading(s.heroSubheading || "");
       setHeroButtonText(s.heroButtonText || "");
       setHeroBannerPreview(s.heroBannerImage || "");
-      setPrimaryColor(s.primaryColor || "#6C3AF5");
-      setSecondaryColor(s.secondaryColor || "#F59E0B");
-      setFontFamily(s.fontFamily || "Inter");
       setCategories((s.categories || []).map(c => ({ ...c, showOnHome: c.showOnHome !== undefined ? c.showOnHome : true })));
       setWhatsappNumber(s.whatsappNumber || "");
       setFacebookUrl(s.facebookUrl || "");
@@ -517,9 +497,6 @@ export default function AdminSettingsPage() {
       formData.append("heroHeading", heroHeading);
       formData.append("heroSubheading", heroSubheading);
       formData.append("heroButtonText", heroButtonText);
-      formData.append("primaryColor", primaryColor);
-      formData.append("secondaryColor", secondaryColor);
-      formData.append("fontFamily", fontFamily);
       formData.append("whatsappNumber", whatsappNumber);
       formData.append("facebookUrl", facebookUrl);
       formData.append("instagramUrl", instagramUrl);
@@ -909,64 +886,6 @@ export default function AdminSettingsPage() {
             </button>
           </div>
         </>)}
-
-        {/* ── COLORS ───────────────────────────────────────────── */}
-        {activeTab === "colors" && (
-          <div style={card}>
-            <SectionTitle>Colors & Font</SectionTitle>
-
-            <label style={{ ...lbl, marginBottom: "10px" }}>Color Presets</label>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "24px" }}>
-              {COLOR_PRESETS.map(p => (
-                <button key={p.name} onClick={() => setPrimaryColor(p.primary)} style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  padding: "8px 16px", borderRadius: "10px", cursor: "pointer",
-                  border: `1.5px solid ${primaryColor === p.primary ? "#6C3AF5" : "#E2E8F0"}`,
-                  background: primaryColor === p.primary ? "#EDE9FE" : "white",
-                  fontFamily: "'DM Sans', sans-serif", fontSize: "13px", fontWeight: "600",
-                  color: primaryColor === p.primary ? "#6C3AF5" : "#374151",
-                  transition: "all 0.15s",
-                }}>
-                  <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: p.primary, display: "inline-block", flexShrink: 0 }} />
-                  {p.name}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-              {[
-                { label: "Primary Color", val: primaryColor, set: setPrimaryColor },
-                { label: "Secondary Color", val: secondaryColor, set: setSecondaryColor },
-              ].map(c => (
-                <div key={c.label}>
-                  <label style={lbl}>{c.label}</label>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <input type="color" value={c.val} onChange={e => c.set(e.target.value)}
-                      style={{ width: "44px", height: "44px", border: "1.5px solid #E2E8F0", borderRadius: "8px", cursor: "pointer", padding: "2px" }} />
-                    <input value={c.val} onChange={e => c.set(e.target.value)}
-                      style={{ ...inp, flex: 1 }} onFocus={focusIn} onBlur={focusOut} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <label style={{ ...lbl, marginBottom: "10px" }}>Font Family</label>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {FONT_OPTIONS.map(f => (
-                <button key={f} onClick={() => setFontFamily(f)} style={{
-                  padding: "8px 18px", borderRadius: "10px", fontSize: "13px",
-                  fontWeight: "600", cursor: "pointer",
-                  border: `1.5px solid ${fontFamily === f ? "#6C3AF5" : "#E2E8F0"}`,
-                  background: fontFamily === f ? "#EDE9FE" : "white",
-                  color: fontFamily === f ? "#6C3AF5" : "#374151",
-                  fontFamily: f, transition: "all 0.15s",
-                }}>
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* ── SOCIAL ───────────────────────────────────────────── */}
         {activeTab === "social" && (<>

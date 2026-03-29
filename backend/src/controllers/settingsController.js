@@ -63,7 +63,6 @@ const updateSettings = async (req, res) => {
       // Simple fields
       const simpleFields = [
         'siteName','heroHeading','heroSubheading','heroButtonText',
-        'primaryColor','secondaryColor','fontFamily',
         'whatsappNumber','facebookUrl','instagramUrl','youtubeUrl','twitterUrl',
         'chatButtonEnabled','chatButtonNumber','supportEmail','supportWhatsapp',
         'footerAddress','logoUrl','faviconUrl','heroBannerImage'

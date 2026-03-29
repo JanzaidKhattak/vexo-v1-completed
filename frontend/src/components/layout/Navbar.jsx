@@ -98,7 +98,7 @@ function LocationPicker() {
                 onClick={() => { changeLocation(null); setOpen(false); setSearch("") }}
                 style={{
                   width: "100%", padding: "10px 14px", textAlign: "left",
-                  background: location?.isDefault ? "#EDE9FE" : "transparent",
+                  background: location?.isDefault ? "#FFF0EB" : "transparent",
                   color: location?.isDefault ? "var(--brand-primary)" : "#374151",
                   border: "none", cursor: "pointer", fontSize: "13px",
                   fontWeight: location?.isDefault ? "700" : "500",
@@ -122,7 +122,7 @@ function LocationPicker() {
                       onClick={() => { changeLocation(city, province); setOpen(false); setSearch("") }}
                       style={{
                         width: "100%", padding: "9px 14px", textAlign: "left",
-                        background: location?.city === city ? "#EDE9FE" : "transparent",
+                        background: location?.city === city ? "#FFF0EB" : "transparent",
                         color: location?.city === city ? "var(--brand-primary)" : "#374151",
                         border: "none", cursor: "pointer", fontSize: "13px",
                         fontWeight: location?.city === city ? "700" : "400",
@@ -151,7 +151,7 @@ function LocationPicker() {
                         onClick={() => { changeLocation(city, p.province); setOpen(false); setSearch("") }}
                         style={{
                           width: "100%", padding: "8px 14px", textAlign: "left",
-                          background: location?.city === city ? "#EDE9FE" : "transparent",
+                          background: location?.city === city ? "#FFF0EB" : "transparent",
                           color: location?.city === city ? "var(--brand-primary)" : "#374151",
                           border: "none", cursor: "pointer", fontSize: "13px",
                           fontWeight: location?.city === city ? "700" : "400",
@@ -209,11 +209,11 @@ function UserDropdown({ user, onLogout }) {
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .user-avatar-btn:hover {
-          box-shadow: 0 0 0 3px rgba(108,58,245,0.2) !important;
+          box-shadow: 0 0 0 3px rgba(255,90,25,0.2) !important;
         }
         .dropdown-item:hover {
           background: #F8FAFC !important;
-          color: #6C3AF5 !important;
+          color: var(--brand-primary) !important;
         }
         .logout-item:hover {
           background: #FEF2F2 !important;
@@ -256,7 +256,7 @@ function UserDropdown({ user, onLogout }) {
           }}>
             {/* User Info */}
             <div style={{
-              padding: "16px", background: "linear-gradient(135deg, #6C3AF5 0%, #9B6DFF 100%)",
+              padding: "16px", background: "linear-gradient(135deg, var(--brand-primary) 0%, #ff7a45 100%)",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div style={{
@@ -491,7 +491,7 @@ export default function Navbar() {
           transform: translateY(0) !important;
           pointer-events: auto !important;
         }
-        .nav-drop-item:hover { background: #F5F3FF !important; color: var(--brand-primary) !important; }
+        .nav-drop-item:hover { background: #FFF0EB !important; color: var(--brand-primary) !important; }
         .nav-drop-item-wrap { overflow: visible !important; }
         .nav-drop-item-wrap:hover > .nav-flyout {
           opacity: 1 !important;
@@ -520,17 +520,9 @@ export default function Navbar() {
           textDecoration: "none", display: "flex",
           alignItems: "center", gap: "8px", flexShrink: 0,
         }}>
-          {settings?.logoUrl ? (
-            <img src={settings.logoUrl} alt="logo" style={{ height: "64px", width: "auto", borderRadius: "6px" }} />
-          ) : (
-            <div style={{
-              width: "32px", height: "32px", background: "var(--brand-primary)",
-              borderRadius: "8px", display: "flex", alignItems: "center",
-              justifyContent: "center", color: "white", fontWeight: "800",
-              fontSize: "14px", fontFamily: "'DM Sans', sans-serif",
-            }}>
-            </div>
-          )}
+          {settings?.logoUrl && (
+  <img src={settings.logoUrl} alt="logo" style={{ height: "48px", width: "auto", borderRadius: "6px" }} />
+)}
         </Link>
 
         {/* Location Picker — show on all screens */}
