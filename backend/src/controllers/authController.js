@@ -2,8 +2,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const { Resend } = require('resend')
 const axios = require('axios')
-const User = require('../models/User')
-const BlacklistedEmail = require('../models/BlacklistedEmail')
+const { User, BlacklistedEmail } = require('../models/index')
 const { createNotification } = require('./notificationController')
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -12,8 +11,8 @@ const generateToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET, {
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 
 const userResponse = (user) => ({
-  _id: user._id, firstName: user.firstName, lastName: user.lastName,
-  name: user.name, email: user.email, phone: user.phone,
+  _id: user.id, firstName: user.firstName, lastName: user.lastName,
+  name: user.getName(), email: user.email, phone: user.phone,
   address: user.address, avatar: user.avatar, role: user.role,
   isEmailVerified: user.isEmailVerified, location: user.location, totalAds: user.totalAds,
 })
@@ -38,11 +37,11 @@ const register = async (req, res) => {
     if (!captchaValid)
       return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed' })
 
-    const blacklisted = await BlacklistedEmail.findOne({ email })
+    const blacklisted = await BlacklistedEmail.findOne({ where: { email } })
     if (blacklisted)
       return res.status(403).json({ success: false, message: `This email has been permanently suspended from VEXO. Reason: ${blacklisted.reason}`, suspended: true })
 
-    const existing = await User.findOne({ email })
+    const existing = await User.findOne({ where: { email } })
     if (existing)
       return res.status(400).json({ success: false, message: 'Email already registered' })
 
@@ -59,17 +58,11 @@ const register = async (req, res) => {
       emailVerifyOtp: otp, emailVerifyOtpExpiry: otpExpiry,
     })
 
-    // ── Notify admins about new signup ──
     try {
-      const admins = await User.find({ role: { $in: ['admin', 'super-admin'] } })
+      const admins = await User.findAll({ where: { role: ['admin', 'super-admin'] } })
       for (const admin of admins) {
-        await createNotification(
-          admin._id,
-          '👤 New User Registered',
-          `${firstName} ${lastName || ''} (${email}) just signed up`,
-          'general',
-          '/vexo-admin/users'
-        )
+        await createNotification(admin.id, '👤 New User Registered',
+          `${firstName} ${lastName || ''} (${email}) just signed up`, 'general', '/vexo-admin/users')
       }
     } catch (e) { console.error('Signup notif error:', e) }
 
@@ -89,7 +82,7 @@ const register = async (req, res) => {
       `
     })
 
-    const token = generateToken(user._id)
+    const token = generateToken(user.id)
     return res.status(201).json({ success: true, token, user: userResponse(user) })
   } catch (error) {
     console.error('Register error:', error)
@@ -109,10 +102,11 @@ const login = async (req, res) => {
       if (!captchaValid)
         return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed' })
     }
-    const blacklisted = await BlacklistedEmail.findOne({ email })
+    const blacklisted = await BlacklistedEmail.findOne({ where: { email } })
     if (blacklisted)
       return res.status(403).json({ success: false, message: `Your account has been permanently suspended. Reason: ${blacklisted.reason}`, suspended: true })
-    const user = await User.findOne({ email })
+
+    const user = await User.findOne({ where: { email } })
     if (!user)
       return res.status(400).json({ success: false, message: 'Invalid email or password' })
     if (!user.isActive)
@@ -122,7 +116,7 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch)
       return res.status(400).json({ success: false, message: 'Invalid email or password' })
-    const token = generateToken(user._id)
+    const token = generateToken(user.id)
     return res.status(200).json({ success: true, token, user: userResponse(user) })
   } catch (error) {
     console.error('Login error:', error)
@@ -136,15 +130,15 @@ const googleCallback = async (req, res) => {
     const isNewUser = user.createdAt && (Date.now() - new Date(user.createdAt).getTime()) < 10000
     if (isNewUser) {
       try {
-        const admins = await User.find({ role: { $in: ['admin', 'super-admin'] } })
+        const admins = await User.findAll({ where: { role: ['admin', 'super-admin'] } })
         for (const admin of admins) {
-          await createNotification(admin._id, '👤 New User via Google',
+          await createNotification(admin.id, '👤 New User via Google',
             `${user.firstName || ''} ${user.lastName || ''} (${user.email}) signed up with Google`,
             'general', '/vexo-admin/users')
         }
       } catch (e) { console.error('Google signup notif error:', e) }
     }
-    const token = generateToken(user._id)
+    const token = generateToken(user.id)
     res.redirect(`${process.env.FRONTEND_URL}/auth/google/success?token=${token}&user=${encodeURIComponent(JSON.stringify(userResponse(user)))}`)
   } catch (error) {
     res.redirect(`${process.env.FRONTEND_URL}/login?error=google_failed`)
@@ -153,7 +147,7 @@ const googleCallback = async (req, res) => {
 
 const sendVerifyOtp = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
+    const user = await User.findByPk(req.user.id)
     if (user.isEmailVerified)
       return res.status(400).json({ success: false, message: 'Email already verified' })
     const otp = generateOtp()
@@ -174,7 +168,7 @@ const sendVerifyOtp = async (req, res) => {
 const verifyEmail = async (req, res) => {
   try {
     const { otp } = req.body
-    const user = await User.findById(req.user._id)
+    const user = await User.findByPk(req.user.id)
     if (user.isEmailVerified)
       return res.status(400).json({ success: false, message: 'Email already verified' })
     if (!user.emailVerifyOtp || user.emailVerifyOtp !== otp)
@@ -193,7 +187,7 @@ const verifyEmail = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password -emailVerifyOtp -emailVerifyOtpExpiry -resetPasswordOtp -resetPasswordOtpExpiry')
+    const user = await User.findByPk(req.user.id)
     return res.status(200).json({ success: true, user: userResponse(user) })
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server error' })
@@ -204,7 +198,7 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body
     if (!email) return res.status(400).json({ success: false, message: 'Email is required' })
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ where: { email } })
     if (!user) return res.status(200).json({ success: true, message: 'If this email exists, a reset code has been sent' })
     if (!user.password) return res.status(400).json({ success: false, message: 'This account uses Google login.' })
     const otp = generateOtp()
@@ -229,7 +223,7 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'All fields are required' })
     if (newPassword.length < 6)
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' })
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ where: { email } })
     if (!user || !user.resetPasswordOtp)
       return res.status(400).json({ success: false, message: 'Invalid or expired reset code' })
     if (user.resetPasswordOtp !== otp)

@@ -1,36 +1,29 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize')
+const { sequelize } = require('../config/db')
 
-const activityLogSchema = new mongoose.Schema({
-  performedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+const ActivityLog = sequelize.define('ActivityLog', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  performedById: {
+    type: DataTypes.UUID,
+    allowNull: false,
   },
   action: {
-    type: String,
-    enum: [
-  'add_admin',
-  'delete_admin',
-  'reset_password',
-  'approve_ad',
-  'reject_ad',
-  'block_user',
-  'unblock_user',
-  'delete_user',
-  'update_settings',
-  'update_role',
-],
-    required: true
+    type: DataTypes.ENUM(
+      'add_admin', 'delete_admin', 'reset_password',
+      'approve_ad', 'reject_ad', 'block_user', 'unblock_user',
+      'delete_user', 'update_settings', 'update_role'
+    ),
+    allowNull: false,
   },
-  targetUser: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  details: {
-    type: String,
-    default: ''
-  },
-}, { timestamps: true })
+  targetUserId: { type: DataTypes.UUID, allowNull: true },
+  details: { type: DataTypes.TEXT, defaultValue: '' },
+}, {
+  tableName: 'activity_logs',
+  timestamps: true,
+})
 
-module.exports = mongoose.model('ActivityLog', activityLogSchema)
+module.exports = ActivityLog

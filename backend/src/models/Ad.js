@@ -1,92 +1,73 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize')
+const { sequelize } = require('../config/db')
 
-const adSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-    trim: true
+const Ad = sequelize.define('Ad', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
   },
-  description: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  price: {
-    type: Number,
-    required: true
-  },
+  title: { type: DataTypes.STRING, allowNull: false },
+  description: { type: DataTypes.TEXT, allowNull: false },
+  price: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
   category: {
-    type: String,
-    required: true,
-    enum: ['cars', 'motorcycles', 'mobiles', 'electronics', 'furniture', 'furniture-home', 'fashion', 'fashion-beauty', 'others']
+    type: DataTypes.ENUM('cars', 'motorcycles', 'mobiles', 'electronics', 'furniture', 'furniture-home', 'fashion', 'fashion-beauty', 'others'),
+    allowNull: false,
   },
-  images: [{
-    type: String
-  }],
-  seller: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  images: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const val = this.getDataValue('images')
+      try { return JSON.parse(val) } catch { return [] }
+    },
+    set(val) {
+      this.setDataValue('images', JSON.stringify(val))
+    },
   },
-  location: {
-    type: String,
-    default: 'Attock'
+  sellerId: {
+    type: DataTypes.UUID,
+    allowNull: false,
   },
-  area: {
-    type: String,
-    default: ''
-  },
+  location: { type: DataTypes.STRING, defaultValue: 'Pakistan' },
+  area: { type: DataTypes.STRING, defaultValue: '' },
   status: {
-    type: String,
-    enum: ['pending', 'active', 'rejected', 'sold'],
-    default: 'pending'
+    type: DataTypes.ENUM('pending', 'active', 'rejected', 'sold', 'blocked'),
+    defaultValue: 'pending',
   },
-  views: {
-    type: Number,
-    default: 0
-  },
-  isFeatured: {
-    type: Boolean,
-    default: false
-  },
+  views: { type: DataTypes.INTEGER, defaultValue: 0 },
+  isFeatured: { type: DataTypes.BOOLEAN, defaultValue: false },
   details: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
+    type: DataTypes.TEXT,
+    defaultValue: '{}',
+    get() {
+      const val = this.getDataValue('details')
+      try { return JSON.parse(val) } catch { return {} }
+    },
+    set(val) {
+      this.setDataValue('details', JSON.stringify(val))
+    },
   },
-
-  isDeletedByUser: {
-    type: Boolean,
-    default: false
+  isDeletedByUser: { type: DataTypes.BOOLEAN, defaultValue: false },
+  deletedAt: { type: DataTypes.DATE, allowNull: true },
+  soldAt: { type: DataTypes.DATE, allowNull: true },
+  hasUpdate: { type: DataTypes.BOOLEAN, defaultValue: false },
+  updateHistory: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const val = this.getDataValue('updateHistory')
+      try { return JSON.parse(val) } catch { return [] }
+    },
+    set(val) {
+      this.setDataValue('updateHistory', JSON.stringify(val))
+    },
   },
-  deletedAt: {
-    type: Date,
-    default: null
-  },
-  soldAt: {
-    type: Date,
-    default: null
-  },
-  hasUpdate: {
-    type: Boolean,
-    default: false
-  },
-  updateHistory: [{
-    updatedAt: { type: Date, default: Date.now },
-    changes: {
-      title: { old: String, new: String },
-      description: { old: String, new: String },
-      price: { old: Number, new: Number },
-      area: { old: String, new: String },
-    }
-  }]
-
+  blockReason: { type: DataTypes.STRING, allowNull: true },
+  blockedAt: { type: DataTypes.DATE, allowNull: true },
 }, {
-  timestamps: true
+  tableName: 'ads',
+  timestamps: true,
 })
 
-adSchema.index({ title: 'text', description: 'text' })
-adSchema.index({ category: 1, status: 1 })
-adSchema.index({ seller: 1 })
-adSchema.index({ isDeletedByUser: 1 })
-
-module.exports = mongoose.model('Ad', adSchema)
+module.exports = Ad

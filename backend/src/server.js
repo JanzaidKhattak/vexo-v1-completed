@@ -1,5 +1,7 @@
+require('dotenv').config()
+const { connectDB } = require('./config/db')
+const { User, Ad, Notification, Report, ActivityLog, BlacklistedEmail, Page, SiteSettings } = require('./models/index')
 const app = require('./app')
-const connectDB = require('./config/db')
 
 const PORT = process.env.PORT || 5000
 

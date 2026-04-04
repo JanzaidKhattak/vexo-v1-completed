@@ -1,9 +1,22 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize')
+const { sequelize } = require('../config/db')
 
-const blacklistedEmailSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  reason: { type: String, default: 'Policy violation' },
-  deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-}, { timestamps: true })
+const BlacklistedEmail = sequelize.define('BlacklistedEmail', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  reason: { type: DataTypes.STRING, defaultValue: 'Policy violation' },
+  deletedById: { type: DataTypes.UUID, allowNull: true },
+}, {
+  tableName: 'blacklisted_emails',
+  timestamps: true,
+})
 
-module.exports = mongoose.model('BlacklistedEmail', blacklistedEmailSchema)
+module.exports = BlacklistedEmail

@@ -1,7 +1,6 @@
- 
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
-const User = require('../models/User')
+const { User } = require('../models/index')
 
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
@@ -15,28 +14,18 @@ passport.use(new GoogleStrategy({
     const lastName = profile.name?.familyName || ''
     const avatar = profile.photos?.[0]?.value || ''
 
-    // Pehle email se dhundo
-    let user = await User.findOne({ email })
+    let user = await User.findOne({ where: { email } })
 
     if (user) {
-      // Existing user — googleId update karo agar nahi hai
       if (!user.googleId) {
-        user.googleId = googleId
-        user.isEmailVerified = true
-        if (!user.avatar) user.avatar = avatar
-        await user.save()
+        await user.update({ googleId, isEmailVerified: true, avatar: user.avatar || avatar })
       }
       return done(null, user)
     }
 
-    // New user banao
     user = await User.create({
-      firstName,
-      lastName,
-      email,
-      googleId,
-      avatar,
-      isEmailVerified: true, // Google se verified hai
+      firstName, lastName, email, googleId,
+      avatar, isEmailVerified: true,
     })
 
     return done(null, user)

@@ -1,17 +1,34 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize')
+const { sequelize } = require('../config/db')
 
-const sectionSchema = new mongoose.Schema({
-  icon: { type: String, default: '📌' },
-  title: { type: String, required: true },
-  content: { type: String, required: true },
+const Page = sequelize.define('Page', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  slug: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  title: { type: DataTypes.STRING, allowNull: false },
+  subtitle: { type: DataTypes.STRING, defaultValue: '' },
+  badge: { type: DataTypes.STRING, defaultValue: '' },
+  sections: {
+    type: DataTypes.TEXT,
+    defaultValue: '[]',
+    get() {
+      const val = this.getDataValue('sections')
+      try { return JSON.parse(val) } catch { return [] }
+    },
+    set(val) {
+      this.setDataValue('sections', JSON.stringify(val))
+    },
+  },
+}, {
+  tableName: 'pages',
+  timestamps: true,
 })
 
-const pageSchema = new mongoose.Schema({
-  slug: { type: String, required: true, unique: true }, // 'terms', 'privacy-policy', 'help'
-  title: { type: String, required: true },
-  subtitle: { type: String },
-  badge: { type: String }, // 'Legal', 'Support' etc
-  sections: [sectionSchema],
-}, { timestamps: true })
-
-module.exports = mongoose.model('Page', pageSchema)
+module.exports = Page

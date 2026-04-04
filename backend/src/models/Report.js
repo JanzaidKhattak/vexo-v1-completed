@@ -1,40 +1,44 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize')
+const { sequelize } = require('../config/db')
 
-const reportSchema = new mongoose.Schema({
-  ad: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Ad',
-    required: true
+const Report = sequelize.define('Report', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
   },
-  reportedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  adId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+  },
+  reportedById: {
+    type: DataTypes.UUID,
+    allowNull: false,
   },
   reason: {
-    type: String,
-    required: true,
-    enum: [
+    type: DataTypes.ENUM(
       'Offensive content', 'Fraud', 'Duplicate ad', 'Product already sold',
       'Wrong category', 'Product unavailable', 'Fake product', 'Indecent', 'Other',
       'spam', 'fraud', 'inappropriate', 'wrong_category', 'duplicate', 'other'
-    ]
+    ),
+    allowNull: false,
   },
-  comment: { type: String, default: '' },
-  description: { type: String, default: '' },
+  comment: { type: DataTypes.TEXT, defaultValue: '' },
+  description: { type: DataTypes.TEXT, defaultValue: '' },
   status: {
-    type: String,
-    enum: ['pending', 'reviewed', 'resolved', 'dismissed'],
-    default: 'pending'
+    type: DataTypes.ENUM('pending', 'reviewed', 'resolved', 'dismissed'),
+    defaultValue: 'pending',
   },
   adminAction: {
-    type: String,
-    enum: ['none', 'ad_blocked', 'ad_unblocked', 'user_blocked', 'warned', 'ignored'],
-    default: 'none'
+    type: DataTypes.ENUM('none', 'ad_blocked', 'ad_unblocked', 'user_blocked', 'warned', 'ignored'),
+    defaultValue: 'none',
   },
-  actionNote: { type: String, default: '' },
-  actionBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  actionAt: { type: Date, default: null }
-}, { timestamps: true })
+  actionNote: { type: DataTypes.TEXT, defaultValue: '' },
+  actionById: { type: DataTypes.UUID, allowNull: true },
+  actionAt: { type: DataTypes.DATE, allowNull: true },
+}, {
+  tableName: 'reports',
+  timestamps: true,
+})
 
-module.exports = mongoose.model('Report', reportSchema)
+module.exports = Report

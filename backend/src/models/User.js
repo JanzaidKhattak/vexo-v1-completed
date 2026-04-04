@@ -1,41 +1,47 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize')
+const { sequelize } = require('../config/db')
 
-const userSchema = new mongoose.Schema({
-  // Basic Info
-  firstName: { type: String, trim: true, default: '' },
-  lastName: { type: String, trim: true, default: '' },
-  email: { type: String, trim: true, lowercase: true, unique: true, sparse: true },
-  password: { type: String, default: '' },
-  phone: { type: String, trim: true, default: null, sparse: true },
-  address: { type: String, trim: true, default: '' },
-  avatar: { type: String, default: '' },
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  firstName: { type: DataTypes.STRING, defaultValue: '' },
+  lastName: { type: DataTypes.STRING, defaultValue: '' },
+  email: { type: DataTypes.STRING, unique: true, allowNull: true },
+  password: { type: DataTypes.STRING, defaultValue: '' },
+  phone: { type: DataTypes.STRING, allowNull: true },
+  address: { type: DataTypes.STRING, defaultValue: '' },
+  avatar: { type: DataTypes.STRING, defaultValue: '' },
 
-  // Auth
-  googleId: { type: String, default: '' },
-  isEmailVerified: { type: Boolean, default: false },
-  emailVerifyOtp: { type: String, default: '' },
-  emailVerifyOtpExpiry: { type: Date, default: null },
+  googleId: { type: DataTypes.STRING, defaultValue: '' },
+  isEmailVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
+  emailVerifyOtp: { type: DataTypes.STRING, defaultValue: '' },
+  emailVerifyOtpExpiry: { type: DataTypes.DATE, allowNull: true },
 
-  // Password Reset
-  resetPasswordOtp: { type: String, default: '' },
-  resetPasswordOtpExpiry: { type: Date, default: null },
+  resetPasswordOtp: { type: DataTypes.STRING, defaultValue: '' },
+  resetPasswordOtpExpiry: { type: DataTypes.DATE, allowNull: true },
 
-  // Role & Status
-role: { type: String, enum: ['user', 'admin', 'super-admin'], default: 'user' },
-isActive: { type: Boolean, default: true },
-blockReason: { type: String, default: '' },
-isDeleted: { type: Boolean, default: false },
-deletedAt: { type: Date, default: null },
+  role: {
+    type: DataTypes.ENUM('user', 'admin', 'super-admin'),
+    defaultValue: 'user',
+  },
+  isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+  blockReason: { type: DataTypes.STRING, defaultValue: '' },
+  isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+  deletedAt: { type: DataTypes.DATE, allowNull: true },
 
-  // Legacy
-  location: { type: String, default: 'Attock' },
-  totalAds: { type: Number, default: 0 },
-
-}, { timestamps: true })
-
-// Virtual — full name
-userSchema.virtual('name').get(function () {
-  return `${this.firstName} ${this.lastName}`.trim() || 'User'
+  location: { type: DataTypes.STRING, defaultValue: 'Attock' },
+  totalAds: { type: DataTypes.INTEGER, defaultValue: 0 },
+}, {
+  tableName: 'users',
+  timestamps: true,
 })
 
-module.exports = mongoose.model('User', userSchema)
+// Virtual — full name
+User.prototype.getName = function () {
+  return `${this.firstName} ${this.lastName}`.trim() || 'User'
+}
+
+module.exports = User
