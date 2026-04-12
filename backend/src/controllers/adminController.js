@@ -333,14 +333,24 @@ const toggleFeatured = async (req, res) => {
     })
 
     if (isFeatured) {
-      await createNotification(
-        ad.sellerId,
-        '⭐ Ad Featured!',
-        `Your ad "${ad.title}" is now featured for ${days} days!`,
-        'ad_status',
-        `/ads/${ad.id}`
-      )
-    }
+  const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+  const expiryStr = expiryDate.toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' })
+  await createNotification(
+    ad.sellerId,
+    '⭐ Your Ad is Now Featured!',
+    `Your ad "${ad.title}" is now Featured for ${days} days! It will appear in the Featured section until ${expiryStr}.`,
+    'ad_status',
+    `/ads/${ad.id}`
+  )
+} else {
+  await createNotification(
+    ad.sellerId,
+    '📌 Featured Removed',
+    `Your ad "${ad.title}" is no longer featured.`,
+    'ad_status',
+    `/ads/${ad.id}`
+  )
+}
 
     return res.status(200).json({ success: true, ad: { ...ad.toJSON(), _id: ad.id } })
   } catch (error) {

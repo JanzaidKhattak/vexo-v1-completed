@@ -192,8 +192,13 @@ const deleteAd = async (req, res) => {
       await cloudinary.uploader.destroy(publicId)
     }
 
-    await ad.destroy()
-    await User.decrement('totalAds', { where: { id: ad.sellerId } })
+    await ad.update({
+  isFeatured: false,
+  featuredUntil: null,
+  featuredDays: 0,
+})
+await ad.destroy()
+await User.decrement('totalAds', { where: { id: ad.sellerId } })
 
     if (!['admin', 'super-admin'].includes(req.user.role)) {
       const admins = await User.findAll({ where: { role: ['admin', 'super-admin'] } })
@@ -256,7 +261,13 @@ const markAsSold = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' })
     }
 
-    await ad.update({ status: 'sold', soldAt: new Date() })
+    await ad.update({ 
+  status: 'sold', 
+  soldAt: new Date(),
+  isFeatured: false,
+  featuredUntil: null,
+  featuredDays: 0,
+})
 
     const admins = await User.findAll({ where: { role: ['admin', 'super-admin'] } })
     for (const adm of admins) {
