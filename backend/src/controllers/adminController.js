@@ -318,8 +318,40 @@ const getActivityLogs = async (req, res) => {
   }
 }
 
+const toggleFeatured = async (req, res) => {
+  try {
+    const { isFeatured, days = 30 } = req.body
+    const ad = await Ad.findByPk(req.params.id)
+    if (!ad) return res.status(404).json({ success: false, message: 'Ad not found' })
+
+    const featuredUntil = isFeatured ? new Date(Date.now() + days * 24 * 60 * 60 * 1000) : null
+
+    await ad.update({
+      isFeatured,
+      featuredUntil,
+      featuredDays: isFeatured ? days : 0,
+    })
+
+    if (isFeatured) {
+      await createNotification(
+        ad.sellerId,
+        '⭐ Ad Featured!',
+        `Your ad "${ad.title}" is now featured for ${days} days!`,
+        'ad_status',
+        `/ads/${ad.id}`
+      )
+    }
+
+    return res.status(200).json({ success: true, ad: { ...ad.toJSON(), _id: ad.id } })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+
 module.exports = {
   getDashboard, getAllAds, updateAdStatus, getAllUsers, updateUserStatus,
   deleteUser, updateUserRole, getAllReports, updateReportStatus,
-  getAdmins, addAdmin, deleteAdmin, resetAdminPassword, getActivityLogs
+  getAdmins, addAdmin, deleteAdmin, resetAdminPassword, getActivityLogs,
+  toggleFeatured
 }

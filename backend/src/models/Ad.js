@@ -37,6 +37,8 @@ const Ad = sequelize.define('Ad', {
   },
   views: { type: DataTypes.INTEGER, defaultValue: 0 },
   isFeatured: { type: DataTypes.BOOLEAN, defaultValue: false },
+featuredUntil: { type: DataTypes.DATE, allowNull: true },
+featuredDays: { type: DataTypes.INTEGER, defaultValue: 0 },
   details: {
     type: DataTypes.TEXT,
     defaultValue: '{}',

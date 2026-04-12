@@ -15,6 +15,7 @@ const {
   deleteAdmin,
   resetAdminPassword,
   getActivityLogs,
+  toggleFeatured,
 } = require('../controllers/adminController')
 const { authenticate, isAdmin, isSuperAdmin } = require('../middleware/auth')
 
@@ -26,6 +27,7 @@ router.get('/dashboard', getDashboard)
 // Ads
 router.get('/ads', getAllAds)
 router.patch('/ads/:id/status', updateAdStatus)
+router.patch('/ads/:id/featured', toggleFeatured)
 
 // Users
 router.get('/users', getAllUsers)

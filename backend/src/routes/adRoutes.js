@@ -9,11 +9,13 @@ const {
   getTrendingAds,
   getRecentAds,
   markAsSold,
-  getRelatedAds
+  getRelatedAds,
+  getFeaturedAds,
 } = require('../controllers/adController')
 const { authenticate } = require('../middleware/auth')
 const { upload } = require('../config/cloudinary')
 
+router.get('/featured', getFeaturedAds)
 router.get('/trending', getTrendingAds)
 router.get('/recent', getRecentAds)
 router.get('/', getAds)

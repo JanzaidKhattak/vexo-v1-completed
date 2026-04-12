@@ -285,7 +285,28 @@ const formatAd = (ad) => {
   }
 }
 
+const getFeaturedAds = async (req, res) => {
+  try {
+    const now = new Date()
+    const ads = await Ad.findAll({
+      where: {
+        isFeatured: true,
+        status: 'active',
+        isDeletedByUser: false,
+        featuredUntil: { [Op.gt]: now },
+      },
+      include: [{ model: User, as: 'seller', attributes: ['id', 'firstName', 'lastName', 'phone', 'avatar'] }],
+      order: [['createdAt', 'DESC']],
+      limit: 10,
+    })
+    return res.status(200).json({ success: true, ads: ads.map(formatAd) })
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server error' })
+  }
+}
+
 module.exports = {
   getAds, getAdById, createAd, updateAd, deleteAd,
   getTrendingAds, getRecentAds, markAsSold, getRelatedAds,
+  getFeaturedAds,
 }
